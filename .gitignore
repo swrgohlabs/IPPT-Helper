@@ -1,0 +1,5 @@
+# Only these files are published. Everything else (real Excel, CLAUDE.md, tests, .claude) stays on this computer.
+/*
+!/index.html
+!/LICENSE
+!/.gitignore

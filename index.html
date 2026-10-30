@@ -1,0 +1,2156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPF Command Link</title>
+<!-- 8-bit favicon: 16x16 pixel MRT train front (NSL red stripe), inline so it stays one file -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23161628'/%3E%3Cpath fill='%23f2f2f2' d='M3 2h10v1h1v9h-1v1H3v-1H2V3h1z'/%3E%3Crect x='4' y='4' width='8' height='4' fill='%23243b6b'/%3E%3Crect x='7' y='4' width='2' height='4' fill='%234a6fb5'/%3E%3Crect x='2' y='9' width='12' height='2' fill='%23d42e12'/%3E%3Crect x='3' y='11' width='2' height='1' fill='%23ffd23f'/%3E%3Crect x='11' y='11' width='2' height='1' fill='%23ffd23f'/%3E%3Crect x='3' y='14' width='10' height='1' fill='%23009645'/%3E%3C/svg%3E">
+<style>
+  /* ---------- theme ---------- */
+  :root {
+    --bg: #14172b;
+    --bg2: #1d2140;
+    --panel: #f4efe1;
+    --ink: #1a1a2e;
+    --muted: #6b6b80;
+    --hover: #fffbe0;
+    --nsl: #d42e12;
+    --ewl: #009645;
+    --nel: #9900aa;
+    --ccl: #fa9e0d;
+    --dtl: #005ec4;
+    --tel: #9d5b25;
+    --px: 4px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      linear-gradient(var(--bg2) 1px, transparent 1px) 0 0 / 16px 16px,
+      linear-gradient(90deg, var(--bg2) 1px, transparent 1px) 0 0 / 16px 16px,
+      var(--bg);
+    color: var(--ink);
+    font-family: "Lucida Console", "Courier New", Consolas, monospace;
+    font-weight: bold;
+    font-size: 15px;
+    line-height: 1.35;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  body.has-unsaved { padding-bottom: 110px; }
+  body.gated { overflow: hidden; }
+  button, input, select { font: inherit; color: inherit; }
+  select { background: #fff; border: 3px solid #000; padding: 5px 8px; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  .hint { margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .ok { color: var(--ewl); }
+  .warn { color: var(--nsl); }
+  .blink { animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- shared bits: buttons, badges, chips ---------- */
+  .btn {
+    background: var(--ccl); border: var(--px) solid #000; padding: 8px 14px; cursor: pointer;
+    box-shadow: 4px 4px 0 #000; text-transform: uppercase; letter-spacing: 1px;
+    text-decoration: none; color: #000; display: inline-block;
+  }
+  .btn:hover { background: #ffb73f; }
+  .btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.small { padding: 4px 10px; font-size: 13px; }
+  .btn.big { font-size: 17px; padding: 12px 20px; }
+  .btn.green { background: #5fd68a; }
+  .btn.green:hover { background: #8be8aa; }
+  .linkbtn { margin-top: 14px; background: none; border: 0; text-decoration: underline; cursor: pointer; color: var(--muted); font-size: 12px; }
+  .code { font-size: 11px; padding: 1px 6px; color: #fff; border: 2px solid #000; flex: none; }
+  .pill { font-size: 11px; padding: 1px 8px; border: 2px solid #000; color: #fff; text-transform: uppercase; }
+  .tag { font-size: 10px; background: var(--ccl); color: #000; padding: 1px 5px; border: 2px solid #000; }
+  .ph { font-size: 13px; color: var(--muted); }
+  .ph.warn { color: var(--nsl); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { cursor: pointer; background: #fff; border: 3px solid #000; padding: 3px 10px; font-size: 12px; text-transform: uppercase; }
+  .chip.active { background: var(--ink); color: #fff; }
+  .toolbar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin: 14px 0; }
+  .toolbar-note { font-size: 13px; }
+  .empty { padding: 16px; border: 3px dashed #999; color: var(--muted); }
+
+  /* ---------- station header sign ---------- */
+  .lines { display: flex; height: 12px; }
+  .lines i { flex: 1; }
+  header.sign { background: #fff; border-bottom: var(--px) solid #000; box-shadow: 0 var(--px) 0 #000; }
+  .sign-inner { display: flex; align-items: center; gap: 16px; padding: 14px 0; flex-wrap: wrap; }
+  .roundel {
+    width: 56px; height: 56px; background: var(--nsl); border: var(--px) solid #000;
+    display: grid; place-items: center; color: #fff; font-size: 20px; letter-spacing: -1px;
+    box-shadow: var(--px) var(--px) 0 #000;
+  }
+  .sign h1 { margin: 0; font-size: 26px; letter-spacing: 2px; text-transform: uppercase; }
+  .sign small { display: block; color: var(--muted); font-size: 12px; letter-spacing: 1px; }
+  .sign .spacer { flex: 1; }
+  .code-badge { display: flex; border: var(--px) solid #000; }
+  .code-badge b { padding: 4px 10px; color: #fff; font-size: 18px; }
+
+  /* ---------- train track ---------- */
+  .track { position: relative; height: 56px; overflow: hidden; margin-top: 12px; container-type: inline-size; }
+  .track::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 8px;
+    background: repeating-linear-gradient(90deg, #888 0 12px, #555 12px 16px);
+  }
+  /* moved with transform (no page re-layout); 100cqw = the track's width (older browsers: the train stays still) */
+  .train { position: absolute; bottom: 14px; left: 0; transform: translateX(-220px); animation: run 14s steps(70) infinite; image-rendering: pixelated; }
+  @keyframes run { from { transform: translateX(-220px); } to { transform: translateX(100cqw); } }
+  @media (prefers-reduced-motion: reduce) { .train { animation: none; transform: translateX(16px); } .blink { animation: none; } }
+  .train svg { display: block; shape-rendering: crispEdges; }
+
+  /* ---------- panels ---------- */
+  .panel { background: var(--panel); border: var(--px) solid #000; box-shadow: 8px 8px 0 #000; margin-top: 28px; position: relative; }
+  .panel-title {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; color: #fff; border-bottom: var(--px) solid #000;
+    text-transform: uppercase; letter-spacing: 2px; font-size: 14px;
+  }
+  .panel-title .dot { width: 14px; height: 14px; background: #fff; border: 3px solid #000; }
+  .panel-body { padding: 16px; }
+
+  /* ---------- your data panel ---------- */
+  .loader { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .status { flex: 1; min-width: 220px; }
+  body.dragging .loader-panel { outline: 4px dashed var(--nsl); outline-offset: 4px; }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; gap: 8px; margin-top: 28px; flex-wrap: wrap; }
+  .tab {
+    flex: 1; min-width: 180px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+    background: #cfc9b6; border: var(--px) solid #000; padding: 12px 14px; font-size: 15px;
+    box-shadow: 4px 4px 0 #000;
+  }
+  .tab:hover { background: #e6e0cc; }
+  .tab.active { background: var(--c); color: #fff; transform: translate(0, 4px); box-shadow: 0 0 0 #000; }
+  .subtabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .subtab { cursor: pointer; text-transform: uppercase; letter-spacing: 2px; background: #fff; border: 3px solid #000; padding: 8px 18px; box-shadow: 3px 3px 0 #000; }
+  .subtab.active { background: var(--c); color: #fff; }
+
+  /* ---------- stat boxes ---------- */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+  .stat { background: var(--panel); border: var(--px) solid #000; box-shadow: 8px 8px 0 #000; }
+  .stat .k { color: #fff; padding: 6px 12px; letter-spacing: 2px; border-bottom: var(--px) solid #000; font-size: 13px; }
+  .stat .v { padding: 12px; font-size: 34px; letter-spacing: 1px; }
+  .stat .v small { font-size: 16px; color: var(--muted); }
+  .stat .bar { height: 12px; margin: 0 12px 12px; border: 3px solid #000; background: #ddd; }
+  .stat .bar i { display: block; height: 100%; }
+  .stat .sub { padding: 0 12px 12px; font-size: 12px; color: var(--muted); }
+  @media (max-width: 520px) { .stats { grid-template-columns: 1fr; } .stat .v { font-size: 26px; } }
+
+  /* ---------- search ---------- */
+  .search-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 760px) { .search-grid { grid-template-columns: 1fr; } }
+  .search-box { position: relative; }
+  .search-box label { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+  .search-box label .key { color: #fff; padding: 1px 8px; border: 3px solid #000; font-size: 12px; }
+  .input-row { display: flex; border: var(--px) solid #000; background: #fff; box-shadow: 4px 4px 0 #000; }
+  .input-row input { flex: 1; border: 0; outline: 0; padding: 12px; background: transparent; min-width: 0; font-size: 16px; }
+  .input-row:focus-within { background: var(--hover); }
+  .input-row .clear { border: 0; border-left: 3px solid #000; background: #eee; cursor: pointer; padding: 0 12px; }
+  .input-row .clear:hover { background: var(--nsl); color: #fff; }
+  .suggest {
+    position: absolute; z-index: 20; left: 0; right: 0; top: 100%; margin-top: 8px;
+    background: #fff; border: var(--px) solid #000; box-shadow: 6px 6px 0 #000;
+    max-height: 340px; overflow-y: auto; display: none;
+  }
+  .suggest.open { display: block; }
+  .suggest .opt { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; border-bottom: 2px solid #ddd; }
+  .suggest .opt:last-child { border-bottom: 0; }
+  .suggest .opt.active, .suggest .opt:hover { background: var(--ink); color: #fff; }
+  .suggest .opt .main { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .suggest .opt .sub { font-size: 12px; opacity: .7; }
+  .suggest .opt mark { background: var(--ccl); color: #000; padding: 0 1px; }
+  .suggest .none { padding: 12px; color: var(--muted); }
+
+  /* ---------- result ticket + field editing ---------- */
+  #result { display: none; }
+  #result.show { display: block; animation: pop .25s steps(4); }
+  @keyframes pop { from { transform: translateY(12px); opacity: 0; } }
+  .ticket-head { display: flex; align-items: center; gap: 14px; padding: 16px; background: #fff; border-bottom: var(--px) solid #000; flex-wrap: wrap; }
+  .station-code { color: #fff; border: var(--px) solid #000; padding: 6px 12px; font-size: 20px; box-shadow: 4px 4px 0 #000; }
+  .ticket-head h2 { margin: 0; font-size: 24px; flex: 1; min-width: 200px; word-break: break-word; }
+  .ticket-head .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ticket-hint { padding: 0 16px; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 16px; }
+  .field { background: #fff; border: 3px solid #000; box-shadow: 4px 4px 0 #000; }
+  .field .k { display: flex; align-items: center; gap: 6px; padding: 3px 8px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #fff; background: var(--ink); }
+  .field .v { padding: 10px 8px; word-break: break-word; min-height: 42px; font-size: 16px; }
+  .field .v.empty { color: #aaa; }
+  .field.primary .k { background: var(--nsl); }
+  .field.phone .k { background: var(--ewl); }
+  .field.editable { cursor: text; }
+  .field.editable:hover { background: var(--hover); }
+  .field .pen { margin-left: auto; opacity: .6; }
+  .field.edited { border-color: var(--ccl); box-shadow: 4px 4px 0 var(--ccl); }
+  .ed-tag { background: var(--ccl); color: #000; padding: 0 4px; font-size: 9px; }
+  .edit-in { display: block; width: 100%; border: 0; border-top: 3px solid var(--ccl); background: var(--hover); padding: 9px 8px; font: inherit; font-size: 16px; resize: vertical; outline: 0; }
+
+  /* ---------- full list (roster) ---------- */
+  .roster { max-height: 560px; overflow-y: auto; border: 3px solid #000; background: #fff; }
+  .ro { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 2px solid #e2ddd0; cursor: pointer; flex-wrap: wrap; }
+  .ro:hover { background: var(--hover); }
+  .ro .nm { flex: 1; min-width: 160px; }
+  .ro.p0 { border-left: 8px solid var(--nsl); }
+  .ro.p1 { border-left: 8px solid var(--ccl); }
+  .ro.p2 { border-left: 8px solid var(--ewl); }
+  .ro-sep { position: sticky; top: 0; z-index: 1; color: #fff; padding: 4px 10px; font-size: 12px; letter-spacing: 2px; }
+
+  /* ---------- send reminder ---------- */
+  .rm-settings { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+  .rm-f { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; display: flex; flex-direction: column; gap: 4px; }
+  .rm-f, .rm-f input, .rm-f select { max-width: 100%; }   /* long dropdown labels must not widen the page */
+  .rm-f input { border: 3px solid #000; background: #fff; padding: 6px 8px; font-size: 14px; outline: 0; }
+  .rm-f input:focus { background: var(--hover); }
+  .rm-edit { margin: 8px 0 16px; border: 3px dashed #999; padding: 8px 12px; }
+  .rm-edit summary { cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 13px; }
+  .rm-edit textarea { width: 100%; min-height: 220px; border: 3px solid #000; padding: 8px; background: #fff; font: inherit; font-size: 13px; font-weight: normal; margin: 4px 0 12px; }
+  .rm-edit h4 { margin: 12px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .rm-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #fff; border: 3px solid #000; box-shadow: 4px 4px 0 #000; padding: 8px 10px; margin-bottom: 12px; }
+  .rm-row.sent { background: #dcd8c8; opacity: .65; }
+  .rm-row.sent .btn { background: #ddd; }
+  .rm-row .nm { flex: 1; min-width: 160px; word-break: break-word; }
+  .rm-row .ctx { display: block; font-size: 11px; color: var(--muted); font-weight: normal; margin-top: 2px; }
+  .rm-row .when { font-size: 12px; color: var(--ewl); }
+  .rm-prev { flex-basis: 100%; white-space: pre-wrap; font-weight: normal; font-size: 13px; background: #e7f6dc; border: 2px solid #000; padding: 10px; }
+
+  /* ---------- batch send ---------- */
+  .batch-ctl { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 0 0 14px; }
+  .batch-ctl input { width: 56px; border: 3px solid #000; padding: 4px 6px; font: inherit; }
+  .batch-panel { position: sticky; top: 8px; z-index: 30; background: #fff; border: var(--px) solid #000; box-shadow: 6px 6px 0 #000; padding: 14px; margin-bottom: 16px; }
+  .bp-head { letter-spacing: 2px; color: var(--nel); }
+  .bp-meter { height: 12px; border: 3px solid #000; margin: 8px 0; background: #eee; }
+  .bp-meter i { display: block; height: 100%; background: var(--ewl); }
+  .bp-next { margin-bottom: 10px; font-size: 17px; }
+  .bp-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .bp-done { color: var(--ewl); }
+
+  /* ---------- save bar ---------- */
+  .savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--nsl); border-top: var(--px) solid #000; color: #fff; }
+  .savebar-in { max-width: 980px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .sb-text { letter-spacing: 1px; }
+
+  /* ---------- gate + conflict popups ---------- */
+  .overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(10, 12, 30, .88); }
+  #conflict { z-index: 110; }
+  .modal { width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; background: var(--panel); border: var(--px) solid #000; box-shadow: 10px 10px 0 #000; }
+  .modal-body { padding: 22px; text-align: center; }
+  .modal-body.left { text-align: left; }
+  .modal h2 { margin: 0 0 4px; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; }
+  .modal p { margin: 8px 0; }
+  .modal ul { margin: 8px 0; padding-left: 20px; font-size: 13px; }
+  .modal .roundel { margin: 0 auto 12px; }
+  .dropzone { margin-top: 16px; padding: 26px 16px; text-align: center; border: var(--px) dashed var(--nsl); background: #fff3ef; }
+  body.dragging .dropzone { background: #ffd6cc; border-style: solid; }
+  .dz-big { font-size: 20px; letter-spacing: 2px; color: var(--nsl); text-transform: uppercase; }
+  .dz-or { margin: 8px 0; color: var(--muted); font-size: 12px; }
+  .howto { text-align: left; margin: 16px 0 6px; padding-left: 22px; font-size: 13px; line-height: 1.5; }
+  .howto-note { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+  .dz-sub { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  @media (pointer: coarse) { .desk { display: none; } }
+  #gateErr { margin-top: 12px; }
+  .cf-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+
+  /* ---------- toast + footer ---------- */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--ink); color: #fff; border: var(--px) solid #fff; padding: 8px 16px;
+    transition: transform .15s steps(3); z-index: 120;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  footer { text-align: center; color: #8a8fb8; font-size: 12px; margin-top: 36px; letter-spacing: 1px; }
+
+  /* ---------- phones ---------- */
+  /* form text of 16px or more stops iPhones zooming in when a field is tapped (same specificity, so this rule wins by order) */
+  @media (pointer: coarse), (max-width: 760px) {
+    .wrap input, .wrap select, .wrap textarea { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="lines"><i style="background:var(--nsl)"></i><i style="background:var(--ewl)"></i><i style="background:var(--nel)"></i><i style="background:var(--ccl)"></i><i style="background:var(--dtl)"></i><i style="background:var(--tel)"></i></div>
+<header class="sign">
+  <div class="wrap sign-inner">
+    <div class="roundel">SPF</div>
+    <div>
+      <h1>Command Link</h1>
+      <small>WHATSAPP GROUP DIRECTORY &middot; COMMANDING OFFICERS</small>
+    </div>
+    <div class="spacer"></div>
+    <div class="code-badge" aria-hidden="true">
+      <b style="background:var(--nsl)">NS</b><b style="background:var(--ewl)">EW</b><b style="background:var(--nel)">NE</b><b style="background:var(--ccl)">CC</b><b style="background:var(--dtl)">DT</b><b style="background:var(--tel)">TE</b>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="track" aria-hidden="true">
+    <div class="train">
+      <svg width="220" height="40" viewBox="0 0 55 10">
+        <rect x="0" y="0" width="55" height="8" fill="#e8e8f0"/>
+        <rect x="0" y="0" width="55" height="1" fill="#fff"/>
+        <rect x="0" y="5" width="55" height="1" fill="var(--nsl)"/>
+        <rect x="0" y="6" width="55" height="1" fill="var(--ewl)"/>
+        <g fill="#1d2140">
+          <rect x="3" y="2" width="6" height="3"/><rect x="11" y="2" width="6" height="3"/>
+          <rect x="19" y="2" width="6" height="3"/><rect x="27" y="2" width="6" height="3"/>
+          <rect x="35" y="2" width="6" height="3"/><rect x="43" y="2" width="6" height="3"/>
+        </g>
+        <rect x="52" y="1" width="3" height="4" fill="#ffe27a"/>
+        <rect x="4" y="8" width="4" height="2" fill="#000"/><rect x="14" y="8" width="4" height="2" fill="#000"/>
+        <rect x="37" y="8" width="4" height="2" fill="#000"/><rect x="47" y="8" width="4" height="2" fill="#000"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- YOUR DATA -->
+  <section class="panel loader-panel">
+    <div class="panel-title" style="background:var(--dtl)"><span class="dot"></span>Your Data</div>
+    <div class="panel-body">
+      <div class="loader">
+        <div class="status">
+          <div id="status"></div>
+          <div id="dlState"></div>
+        </div>
+        <button class="btn small" id="pick">Load different file</button>
+        <button class="btn green" id="dlBtn">&#11015; Download updated Excel</button>
+        <input type="file" id="file" accept=".xlsx,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN TABS -->
+  <nav class="tabs" role="tablist">
+    <button class="tab active" id="tabBtnFind" role="tab" style="--c:var(--nsl)">&#9654; Find Officer</button>
+    <button class="tab" id="tabBtnRemind" role="tab" style="--c:var(--nel)">&#9993; Send Reminder</button>
+  </nav>
+
+  <!-- ===== FIND OFFICER TAB ===== -->
+  <div id="tabFind">
+    <div class="stats" id="stats"></div>
+
+    <section class="panel">
+      <div class="panel-title" style="background:var(--nsl)"><span class="dot"></span>Platform &middot; Find an Officer</div>
+      <div class="panel-body">
+        <div class="search-grid">
+          <div class="search-box">
+            <label><span class="key" style="background:var(--nsl)">A</span> Search by name</label>
+            <div class="input-row">
+              <input id="qName" type="text" autocomplete="off" spellcheck="false" placeholder="Type a name (typos ok)...">
+              <button class="clear" data-clear="qName" title="Clear">X</button>
+            </div>
+            <div class="suggest" id="sugName"></div>
+            <div class="hint">Approximate matches are flagged <span class="tag">~ CLOSE</span></div>
+          </div>
+          <div class="search-box">
+            <label><span class="key" style="background:var(--ewl)">B</span> Search by HP number</label>
+            <div class="input-row">
+              <input id="qPhone" type="text" inputmode="tel" autocomplete="off" placeholder="e.g. 9123 4567 or last digits...">
+              <button class="clear" data-clear="qPhone" title="Clear">X</button>
+            </div>
+            <div class="suggest" id="sugPhone"></div>
+            <div class="hint">Full or partial number. +65 / spaces are ignored.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="result">
+      <div class="panel-title" id="resTitle" style="background:var(--ewl)"><span class="dot"></span>Now Arriving</div>
+      <div class="ticket-head">
+        <div class="station-code" id="resCode">NS1</div>
+        <h2 id="resName"></h2>
+        <div class="actions">
+          <button class="btn small green" id="copyPhone">Copy HP</button>
+          <button class="btn small" id="openWa">Open WhatsApp</button>
+        </div>
+      </div>
+      <div class="hint ticket-hint">Click any field to edit it. Changes are saved into the Excel when you download (or auto-save).</div>
+      <div class="fields" id="fields"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title" style="background:var(--ewl)"><span class="dot"></span>All Officers</div>
+      <div class="panel-body">
+        <div class="toolbar" style="margin-top:0">
+          <div class="chips" id="rosterChips"></div>
+          <div class="toolbar-note">Most outstanding at the top. Click a name to open it.</div>
+        </div>
+        <div class="roster" id="roster"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== SEND REMINDER TAB ===== -->
+  <div id="tabRemind" hidden>
+    <section class="panel">
+      <div class="panel-title" style="background:var(--nel)"><span class="dot"></span>Send Reminder &middot; Tap to WhatsApp</div>
+      <div class="panel-body">
+        <div class="subtabs">
+          <button class="subtab active" id="subIppt" style="--c:var(--ewl)">IPPT</button>
+          <button class="subtab" id="subShoot" style="--c:var(--dtl)">SHOOTING</button>
+        </div>
+
+        <div class="rm-settings">
+          <label class="rm-f">Your name / rank (signs the message)
+            <input id="rmMe" type="text" placeholder="e.g. LTC Tan" autocomplete="off"></label>
+          <label class="rm-f rm-ippt">Last FY
+            <input id="rmLastFy" type="text" size="6" autocomplete="off"></label>
+          <label class="rm-f rm-ippt">This FY
+            <input id="rmThisFy" type="text" size="6" autocomplete="off"></label>
+          <label class="rm-f rm-ippt">Deadline
+            <input id="rmDeadline" type="text" size="10" autocomplete="off"></label>
+          <label class="rm-f" id="rmGroupWrap">Group <select id="rmGroup"></select></label>
+          <label class="rm-f">Open chats in
+            <select id="rmOpenIn">
+              <option value="web">WhatsApp (phone app / web)</option>
+              <option value="app">WhatsApp Desktop app</option>
+            </select></label>
+        </div>
+
+        <details class="rm-edit">
+          <summary>Edit message wording</summary>
+          <div class="hint">Placeholders: <b>{name}</b> <b>{me}</b> <b>{lastFY}</b> <b>{thisFY}</b> <b>{deadline}</b>. WhatsApp bold = *text*.</div>
+          <div id="rmTemplates"></div>
+          <button class="btn small" id="rmResetTpl">Reset to default wording</button>
+        </details>
+
+        <div class="toolbar">
+          <div class="chips" id="rmChips"></div>
+          <div class="toolbar-note" id="rmProgress"></div>
+        </div>
+        <div class="batch-ctl">
+          <button class="btn" id="bStart">&#9654; Start batch</button>
+          <label>of <input id="bSize" type="number" min="1" max="20" value="20"> people (max 20)</label>
+          <span class="hint">Goes through the people shown above who haven't been sent yet, one tap each.</span>
+        </div>
+        <div class="batch-panel" id="batchPanel" hidden></div>
+        <div id="rmList"></div>
+        <div class="hint">Tap SEND to open WhatsApp with the message filled in. You still press send inside WhatsApp. Each tap is recorded with the date and time.</div>
+      </div>
+    </section>
+  </div>
+
+  <footer>MIND THE GAP <span class="blink">_</span> NEXT: GROUP MANAGER</footer>
+</div>
+
+<!-- SAVE BAR: shows whenever there are updates not yet in the Excel -->
+<div class="savebar" id="saveBar" hidden>
+  <div class="savebar-in">
+    <span class="sb-text"><span class="blink">&#9632;</span> <b id="saveCount">0</b> <span id="saveWord">updates</span> NOT SAVED TO EXCEL</span>
+    <button class="btn green big" id="saveBtn">&#11015; Download updated Excel</button>
+  </div>
+</div>
+
+<!-- GATE: must load a file before using the app -->
+<div class="overlay" id="gate">
+  <div class="modal">
+    <div class="lines"><i style="background:var(--nsl)"></i><i style="background:var(--ewl)"></i><i style="background:var(--nel)"></i><i style="background:var(--ccl)"></i><i style="background:var(--dtl)"></i><i style="background:var(--tel)"></i></div>
+    <div class="modal-body">
+      <div class="roundel">SPF</div>
+      <h2>Tap in to start</h2>
+      <p>Load your Excel list to begin.</p>
+      <div class="dropzone">
+        <div class="dz-big desk">&#8681; Drag your Excel file here</div>
+        <div class="desk dz-or">or</div>
+        <button class="btn big" id="gatePick">Choose Excel file</button>
+        <div class="dz-sub">.xlsx or .csv &middot; the file stays on this device</div>
+      </div>
+      <div id="gateErr"></div>
+      <ol class="howto">
+        <li><b>Load</b> your Excel list.</li>
+        <li><b>Find</b> an officer, or open <b>Send Reminder</b> and tap Send. You press send in WhatsApp.</li>
+        <li><b>Download</b> when done. The red bar at the bottom shows when you have unsaved updates.</li>
+      </ol>
+      <p class="howto-note">Your list never leaves this device. Nothing is uploaded.</p>
+      <button class="linkbtn" id="gateDemo">No file yet? Try with sample data</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFLICT: loaded file is missing updates made on this device -->
+<div class="overlay" id="conflict" hidden>
+  <div class="modal">
+    <div class="panel-title" style="background:var(--nsl)"><span class="dot"></span>&#9888; This file may be outdated</div>
+    <div class="modal-body left">
+      <p>On this device, <b id="cfCount"></b> update(s) were made, the latest on <b id="cfDate"></b>, that are <u>not</u> in this file.</p>
+      <ul id="cfList"></ul>
+      <p class="hint">You may have opened an older copy. The newest one is usually the file ending in <b>_updated_...</b> in your Downloads.</p>
+      <div class="cf-actions">
+        <button class="btn green" id="cfKeep">Keep my edits (recommended)</button>
+        <button class="btn small" id="cfOverride">Use this file as-is</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* =====================================================================
+   1. CONSTANTS
+   ===================================================================== */
+const LINES = [
+  { code: "NS", color: "#d42e12" }, { code: "EW", color: "#009645" },
+  { code: "NE", color: "#9900aa" }, { code: "CC", color: "#fa9e0d" },
+  { code: "DT", color: "#005ec4" }, { code: "TE", color: "#9d5b25" },
+];
+const TABS = ["ippt", "shoot"];
+const TAB_LABEL = { ippt: "IPPT", shoot: "Shooting" };
+const LOG_COLS = { ippt: "IPPT reminder sent", shoot: "Shooting reminder sent" };   // added to the exported Excel
+const META_SHEET = "_SPF";                                                          // hidden sheet: save time + settings
+const STORE = { actions: "spf.actions.v1", edits: "spf.edits.v1", settings: "spf.remind.v1" };
+const HP_LENGTH = 8, COUNTRY_CODE = "65";            // Singapore mobile numbers
+const NO_COL = -1, AUTO_TRACK = -2;       // column choices: none / work out IPPT track from FY results
+const BATCH_MAX = 20, COOLDOWN_MIN = 15;
+const EXCEL_EPOCH = 25569, DAY_MS = 86400000;
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+const DEF_TPL = {
+  ippt: {
+    NSFIT:
+`Hi {name}, this is {me}.
+
+I understand from my list that you failed or did not take your IPPT last FY ({lastFY}). Can I check with you:
+
+1. How many NSFIT sessions do you have left?
+2. When are you planning to take your NSFIT IPPT this FY? ({deadline} at the latest)
+3. Could you send me a screenshot of your IPPT booking?
+
+*Reminder:* if you failed IPPT last year, you need to go on NSFIT this year (or pass). NSFIT is 9 NSFIT sessions + 1 IPPT attempt.
+
+Please start ASAP as slots are tight, ideally before CNY. We really want to help you avoid a Provost investigation. Around {deadline}, it is very difficult to get NSFIT and IPPT slots.
+
+If there are no NSFIT slots available (you can only book 3 at a time), you can try Buddy Fit.
+
+Please reply as soon as possible. Thank you!`,
+    Normal:
+`Hi {name}, this is {me}.
+
+Can I check with you on your IPPT for {thisFY}:
+
+1. Have you taken your IPPT this FY?
+2. If yes, what date did you take it?
+3. If not, when do you plan to take it?
+4. What was the result? (Please let me know even if it was a fail.)
+
+If you are doing NSFIT, please let me know when you are planning your NSFIT IPPT.
+
+Please reply as soon as possible. Thank you!`,
+  },
+  shoot: {
+    "Not attempted":
+`Hi {name}, this is {me}.
+
+I understand from my list that you have not attempted your shooting yet. Can I check with you:
+
+1. When do you plan to attempt it?
+2. Have you booked a slot? If so, could you send me a screenshot of your booking?
+
+Please book early as slots can be tight.
+
+Please reply as soon as possible. Thank you!`,
+  },
+};
+const TPL_LABEL = { NSFIT: "NSFIT track", Normal: "Normal track", "Not attempted": "Shooting not attempted" };
+
+// Statuses per reminder tab. A status with a template gets a message; the rest are notes.
+const STATUS_ORDER = { ippt: ["NSFIT", "Normal", "Done", "Not eligible"], shoot: ["Not attempted", "Pass", "Fail"] };
+const STATUS_COLOR = {
+  NSFIT: "#d42e12", Normal: "#005ec4", Done: "#009645", "Not eligible": "#6b6b80",
+  "Not attempted": "#fa9e0d", Pass: "#009645", Fail: "#9d5b25", Unclear: "#6b6b80",
+};
+const STATUS_NOTE = {
+  Done: "Passed this FY, no reminder", "Not eligible": "Not eligible, no reminder",
+  Pass: "Attempted, no action", Fail: "Attempted, no action", Unclear: "Check sheet value",
+};
+const IPPT_CLEARED = ["Done", "Not eligible"];
+const SHOOT_CLEARED = ["Pass", "Fail"];
+
+// Full list groups, most outstanding first.
+const PRIORITY = [
+  { label: "IPPT outstanding", color: "var(--nsl)" },
+  { label: "Shooting outstanding", color: "var(--ccl)" },
+  { label: "All clear", color: "var(--ewl)" },
+];
+
+const DEMO_HEADER = ["S/N", "Full Name", "Rank", "Contact No.", "Ippt Eligibility", "FY 24 IPPT Results", "FY 25 IPPT Date", "FY 25 IPPT Result", "Shooting", "Remarks"];
+const DEMO_SHEETS = [
+  { name: "WL X", rows: [DEMO_HEADER,
+    ["1", "TAN WEI MING", "Sergeant 1 (NS)", "91234567", "YES", "FAIL", "", "", "Fail", "3 NSFIT left"],
+    ["2", "LIM JIA HUI", "Corporal (NS)", "82345678", "YES", "PASS", "", "", "Pass", ""],
+    ["3", "MUHAMMAD FARIS BIN ISMAIL", "Sergeant 2 (NS)", "93456789", "YES", "FAIL", "18/5/2025", "FAIL", "", "Booking IPPT for Dec"],
+    ["4", "RAJENDRAN S/O KUMAR", "Sergeant 3 (NS)", "84567890", "YES", "", "", "", "Pass", ""],
+    ["5", "NG SIEW LAN", "Corporal (NS)", "95678901", "YES", "SILVER", "2/9/2025", "PASS", "Fail", ""],
+    ["6", "CHUA BOON KENG", "Sergeant 1 (NS)", "86789012", "NO", "PWI", "", "", "Pass", "Medical review"],
+  ] },
+  { name: "WL Y", rows: [DEMO_HEADER,
+    ["7", "SITI NURHALIZA BINTE AHMAD", "Sergeant 2 (NS)", "97890123", "YES", "FAIL", "", "", "", "Call no answer"],
+    ["8", "WONG KAH SENG", "Corporal (NS)", "88901234", "YES", "PASS", "", "", "Pass", ""],
+    ["9", "ONG PEI SHAN", "Inspector (NS)", "99012345", "YES", "GOLD", "", "", "", ""],
+    ["10", "GURPREET SINGH", "Sergeant 1 (NS)", "81123456", "YES", "ABSENT", "", "", "Fail", "NSFIT 6/9"],
+    ["11", "TEO CHEE HONG", "Sergeant 3 (NS)", "9223456", "YES", "FAIL", "", "", "Pass", "Number not in use"],
+    ["12", "LEE XIN YI", "Corporal (NS)", "83345678", "YES", "PASS", "", "", "", ""],
+  ] },
+];
+
+/* =====================================================================
+   2. SMALL UTILITIES
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pad = n => String(n).padStart(2, "0");
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+// localStorage can be blocked (private mode, policies); the app must still work.
+const store = {
+  load(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
+  save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} },
+};
+
+let toastTimer = 0;
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+// --- text + phone ---
+const norm = s => String(s).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+function normPhone(s) {
+  const d = String(s).replace(/\D+/g, "");
+  return d.length === COUNTRY_CODE.length + HP_LENGTH && d.startsWith(COUNTRY_CODE) ? d.slice(COUNTRY_CODE.length) : d;
+}
+const fmtPhone = d => d.length === HP_LENGTH ? d.slice(0, 4) + " " + d.slice(4) : d;
+const displayPhone = rec => fmtPhone(rec.phoneNorm || rec.phone);
+const hasValidHp = rec => rec.phoneNorm.length === HP_LENGTH;
+
+// --- dates ---
+const minuteNow = () => Math.floor(Date.now() / 60000) * 60000;
+const serialToUtc = n => new Date(Math.round((n - EXCEL_EPOCH) * DAY_MS));
+const dateToSerial = (y, m, d) => Date.UTC(y, m - 1, d) / DAY_MS + EXCEL_EPOCH;
+const isRealDate = (y, m, d) => { const t = new Date(Date.UTC(y, m - 1, d)); return t.getUTCMonth() === m - 1 && t.getUTCDate() === d; };
+function fmtLogTime(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fmtWhen(ts) {
+  if (!ts || isNaN(ts)) return "";
+  return new Date(ts).toLocaleString("en-SG", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+// Reads a "reminder sent" cell back: our text format, d/m/yyyy if Excel converted and reformatted it
+// (day first, as in Singapore; the time may be lost), or a raw date serial.
+function parseLogTime(v) {
+  v = String(v ?? "").trim();
+  if (!v) return 0;
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/.exec(v);
+  if (m) return new Date(+m[1], m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)).getTime();
+  const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/.exec(v);
+  if (dmy) return new Date(+dmy[3], dmy[2] - 1, +dmy[1], +(dmy[4] || 0), +(dmy[5] || 0)).getTime();
+  if (/^\d+(\.\d+)?$/.test(v)) {
+    const d = serialToUtc(parseFloat(v));
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes()).getTime();
+  }
+  const t = Date.parse(v);
+  return isNaN(t) ? 0 : Math.floor(t / 60000) * 60000;
+}
+
+// Per-person reminder timestamps live in maps: personKey -> {ippt, shoot}.
+// Copies each timestamp from src into target[key] when it is newer.
+function mergeLatest(target, key, src) {
+  if (!src) return;
+  for (const tab of TABS) {
+    const v = src[tab] || 0;
+    if (v > ((target[key] || {})[tab] || 0)) (target[key] ||= {})[tab] = v;
+  }
+}
+
+// --- small HTML builders ---
+const codeBadge = rec => `<span class="code" style="background:${rec.color}">${rec.code}</span>`;
+const statusPill = (status, prefix = "") => `<span class="pill" style="background:${STATUS_COLOR[status]}">${esc(prefix + status)}</span>`;
+const chipsHtml = (options, active) => options
+  .map(o => `<button class="chip${o.value === active ? " active" : ""}" data-f="${esc(o.value)}">${esc(o.label)} ${o.count}</button>`).join("");
+
+/* =====================================================================
+   3. STATE
+   ===================================================================== */
+// Loaded data
+let headers = [];          // combined column names
+let rows = [];             // per person: cell values aligned to headers (edited in place)
+let savedRows = [];        // the same rows as they are in the loaded / last saved file
+let records = [];          // per person: name, phone, search tokens, badge...
+let recordsByRow = new Map();
+let sourceSheets = [];     // [{name, headers, map}] original sheet layout, map: cell index -> headers index
+let sourceRows = [];       // per row: {sheet, cells} original cells, rewritten on export
+let fileMeta = {};         // values from the hidden _SPF sheet
+let fileName = "";          // name of the file the data now lives in (changes after Save As)
+let sourceFileName = "";    // name of the file that was loaded
+let loadCount = 0;          // increases with every file load
+let demoMode = false;
+let cols = {};             // detected column indexes, see detectColumns()
+
+// Reminder log and edits: this device's copy, and what the loaded file contains
+let actions = store.load(STORE.actions, {});
+let fileActions = {};
+let edits = store.load(STORE.edits, {});   // fileKey -> {header lowercased: {v, ts}}
+
+// Message settings (saved on the device and inside the Excel)
+const settings = {
+  me: "", lastFy: "FY24", thisFy: "FY25", deadline: "March", openIn: "web",
+  tpl: { ippt: { ...DEF_TPL.ippt }, shoot: { ...DEF_TPL.shoot } },
+};
+const SETTING_INPUTS = { me: "rmMe", lastFy: "rmLastFy", thisFy: "rmThisFy", deadline: "rmDeadline" };
+let settingsVersion = 0, savedSettingsVersion = 0;   // bumped on every settings change; equal = saved
+const settingsEdited = () => settingsVersion !== savedSettingsVersion;
+
+// View state
+const view = { tab: "ippt", filter: "ALL", group: "ALL", rosterFilter: "ALL" };
+let selected = null;       // record shown in the ticket
+const batch = { queue: [], pos: 0, tab: "", endedAt: 0 };
+let saveHandle = null, autoSaveTimer = 0;
+
+/* =====================================================================
+   4. NAME + HP SEARCH (typo tolerant)
+   ===================================================================== */
+// Damerau-Levenshtein: a swapped pair of letters counts as one mistake. Stops early past max.
+function lev(a, b, max) {
+  if (a === b) return 0;
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev2 = null, prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j++) {
+      let v = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (prev2 && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) v = Math.min(v, prev2[j - 2] + 1);
+      cur[j] = v;
+      if (v < rowMin) rowMin = v;
+    }
+    if (rowMin > max) return max + 1;
+    prev2 = prev; prev = cur;
+  }
+  return prev[b.length];
+}
+
+// Name words that are spelt many ways, and words that carry no meaning for search.
+const NAME_ALIAS = {
+  muhd: "muhammad", mohd: "muhammad", md: "muhammad", muhamad: "muhammad", muhammed: "muhammad",
+  mohamad: "muhammad", mohammad: "muhammad", mohamed: "muhammad", mohammed: "muhammad", mohamd: "muhammad",
+  noor: "nur", nor: "nur", sity: "siti",
+};
+const NAME_FILLER = new Set(["bin", "binte", "binti", "bte", "bt", "b", "s", "o", "d", "so", "do", "al"]);
+// collapse doubled letters and common spelling swaps: "Lee"~"Le", "Phang"~"Fang", "Chuck"~"Chuk"
+const squash = t => t.replace(/ph/g, "f").replace(/ck/g, "k").replace(/(.)\1+/g, "$1");
+const nameTokens = s => norm(s).split(" ").filter(t => t && !NAME_FILLER.has(t)).map(t => squash(NAME_ALIAS[t] || t));
+
+// Similarity of one typed word against one name word, 0..1.
+function tokenSim(q, t) {
+  if (t === q) return 1;
+  if (t.startsWith(q)) return q.length === 1 ? 0.6 : 0.92;
+  if (q.length >= 3 && t.includes(q)) return 0.8;
+  const maxErr = q.length <= 2 ? 0 : q.length <= 4 ? 1 : q.length <= 7 ? 2 : 3;
+  if (maxErr === 0) return 0;
+  const full = lev(q, t, maxErr);
+  let prefix = maxErr + 1;                 // still typing: compare against the start of the name word too
+  for (const n of [q.length - 1, q.length, q.length + 1])
+    if (n > 1 && t.length > n) prefix = Math.min(prefix, lev(q, t.slice(0, n), maxErr));
+  const d = Math.min(full, prefix + 0.5);
+  if (d > maxErr) return 0;
+  return Math.max(0.35, 0.78 - 0.12 * d);
+}
+
+// Returns {score, fuzzy} or null when the name does not match.
+function scoreName(qNorm, qTokens, rec) {
+  if (rec.nameNorm === qNorm) return { score: 100, fuzzy: false };
+  if (rec.nameNorm.startsWith(qNorm)) return { score: 95, fuzzy: false };
+  if (rec.nameNorm.includes(qNorm)) return { score: 88, fuzzy: false };
+  if (!qTokens.length) return null;
+  const qJoined = qTokens.join(""), nameJoined = rec.tokens.join("");
+  if (qJoined.length >= 4 && nameJoined.includes(qJoined)) return { score: 82, fuzzy: true };   // "weiming" ~ "wei ming"
+
+  let total = 0, matched = 0, exact = true;
+  for (const q of qTokens) {
+    const best = Math.max(0, ...rec.tokens.map(t => tokenSim(q, t)));
+    if (best > 0) matched++;
+    if (best < 0.8) exact = false;
+    total += best;
+  }
+  // most words must match, but one wrong or extra word is forgiven
+  if (matched && matched >= Math.ceil(qTokens.length / 2)) {
+    const score = (total / qTokens.length) * 80;
+    return score >= 28 ? { score, fuzzy: !exact } : null;
+  }
+  // last resort: the whole name typed without spaces, with a few mistakes
+  const slack = Math.floor(qJoined.length / 4);
+  if (qJoined.length >= 5 && lev(qJoined, nameJoined.slice(0, qJoined.length + 1), slack) <= slack) return { score: 40, fuzzy: true };
+  return null;
+}
+
+const byScore = (a, b) => b.score - a.score || a.rec.name.localeCompare(b.rec.name);
+
+function searchName(query) {
+  const qNorm = norm(query);
+  if (!qNorm) return [];
+  const qTokens = nameTokens(query);
+  const out = [];
+  for (const rec of records) {
+    const match = scoreName(qNorm, qTokens, rec);
+    if (match) out.push({ rec, ...match });
+  }
+  return out.sort(byScore).slice(0, 10);
+}
+
+function searchPhone(query) {
+  const q = normPhone(query);
+  if (q.length < 2) return [];
+  const maxErr = q.length >= HP_LENGTH ? 2 : 1;          // a wrong or swapped digit or two
+  const out = [];
+  for (const rec of records) {
+    const hp = rec.phoneNorm;
+    if (!hp) continue;
+    if (hp.includes(q)) out.push({ rec, score: hp.startsWith(q) || hp.endsWith(q) ? 100 : 90, fuzzy: false });
+    else if (q.length >= 6 && q.length <= hp.length + 1) {
+      const d = lev(q, hp, maxErr);
+      if (d <= maxErr) out.push({ rec, score: 60 - d * 10, fuzzy: true });
+    }
+  }
+  return out.sort(byScore).slice(0, 10);
+}
+
+/* =====================================================================
+   5. COLUMNS + STATUS RULES
+   ===================================================================== */
+// Finds the columns the app uses, by header name.
+function detectColumns(hdrs) {
+  const lower = hdrs.map(h => String(h).toLowerCase());
+  const find = re => lower.findIndex(h => re.test(h));
+  // "FY 24 IPPT Results", "FY25 IPPT Result" ... newest = this FY, the one before = last FY
+  const fy = lower.map((h, i) => ({ m: /^fy\s*'?(\d{2,4})\b.*ippt.*result/.exec(h), i }))
+    .filter(x => x.m).map(x => ({ n: +x.m[1] % 100, i: x.i })).sort((a, b) => b.n - a.n);
+  const thisFy = fy[0], lastFy = thisFy && fy.find(f => f.n === thisFy.n - 1);
+
+  let name = find(/name|nama/);
+  let phone = find(/(^|\W)(hp|phone|mobile|contact|handphone|number|tel|whatsapp)/);
+  if (name < 0) name = 0;
+  if (phone < 0 || phone === name) phone = hdrs.length > 1 ? (name === 0 ? 1 : 0) : 0;
+  const track = find(/track|nsfit/);
+  return {
+    name, phone,
+    track: track >= 0 ? track : lastFy ? AUTO_TRACK : NO_COL,
+    shoot: find(/shoot|rifle|sar21|marksman|range/),
+    thisFy: thisFy ? thisFy.i : NO_COL,
+    lastFy: lastFy ? lastFy.i : NO_COL,
+    thisFyNum: thisFy ? thisFy.n : null,
+    elig: find(/eligib/),
+    remarks: find(/remark|comment|note/),
+    group: lower.indexOf("sheet"),
+  };
+}
+
+const cellOf = (rec, col) => col >= 0 ? String(rec.raw[col] ?? "").trim() : "";
+// lower-case words only: "N/A" -> "n a", "Not Attempted!" -> "not attempted"
+const wordsOf = v => v.toLowerCase().replace(/[^a-z]+/g, " ").trim();
+const NOT_PASS = /\b(not|no|never)\s+pass/i;
+const passLike = v => /\b(pass|passed|gold|silver|pwi|incentive)\b/i.test(v) && !NOT_PASS.test(v);
+// A bare score: the pass mark is not known, so the CO decides (no automatic message).
+const isScore = v => /^\d+(\.\d+)?$/.test(v);
+// "No", "No - medical", "N", "Not eligible", "Ineligible", "Exempt". Not "N/A" or "Not sure": those still get reminded.
+const NOT_ELIGIBLE = /^(no|not eligible|ineligible|exempt|exempted)\b|^n$/;
+const NOT_ATTEMPTED = /^(not attempted|not attempt|not yet attempted|not yet|not done|not taken|no|nil|na|n a|nt|pending|unattempted|absent)$/;
+
+function ipptStatus(rec) {
+  if (NOT_ELIGIBLE.test(wordsOf(cellOf(rec, cols.elig)))) return "Not eligible";
+  const thisFy = cellOf(rec, cols.thisFy);
+  if (passLike(thisFy)) return "Done";
+  if (cols.track >= 0) {
+    const v = wordsOf(cellOf(rec, cols.track)).replace(/ /g, "");
+    if (v.includes("nsfit")) return "NSFIT";
+    if (v.includes("normal")) return "Normal";
+    return "Unclear";
+  }
+  if (cols.track !== AUTO_TRACK) return "Unclear";
+  // Auto: failed or did not take IPPT last FY -> NSFIT
+  if (isScore(thisFy)) return "Unclear";
+  const last = cellOf(rec, cols.lastFy);
+  if (passLike(last)) return "Normal";
+  if (isScore(last)) return "Unclear";
+  if (!last || /fail|absent/i.test(last) || NOT_PASS.test(last)) return "NSFIT";
+  return "Unclear";
+}
+
+// Only clear "not attempted" wording (or a blank cell) gets a reminder.
+// Scores, dates and anything unrecognised are Unclear, so nobody who has shot is chased.
+function shootStatus(rec) {
+  if (cols.shoot < 0) return "Unclear";
+  const raw = cellOf(rec, cols.shoot), v = wordsOf(raw);
+  if ((!v && !/\d/.test(raw)) || NOT_ATTEMPTED.test(v)) return "Not attempted";   // blank, "-", or wording
+  if (/^pass/.test(v)) return "Pass";
+  if (/\bfail/.test(v)) return "Fail";
+  return "Unclear";
+}
+
+const statusOf = (rec, tab) => tab === "ippt" ? ipptStatus(rec) : shootStatus(rec);
+const hasIpptData = () => cols.track !== NO_COL || cols.thisFy >= 0;
+const hasShootData = () => cols.shoot >= 0;
+const hasTabData = tab => tab === "ippt" ? cols.track !== NO_COL : hasShootData();
+const ipptCleared = rec => IPPT_CLEARED.includes(ipptStatus(rec));
+const shootCleared = rec => SHOOT_CLEARED.includes(shootStatus(rec));
+
+// 0 = IPPT outstanding, 1 = IPPT ok but shooting outstanding, 2 = all clear
+function priorityOf(rec) {
+  if (hasIpptData() && !ipptCleared(rec)) return 0;
+  if (hasShootData() && !shootCleared(rec)) return 1;
+  return 2;
+}
+
+/* =====================================================================
+   6. READING FILES (.xlsx without libraries, .csv)
+   ===================================================================== */
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, "");
+  const firstLine = text.split("\n")[0];
+  const delim = (firstLine.match(/\t/g) || []).length > (firstLine.match(/,/g) || []).length ? "\t" : ",";
+  const out = [];
+  let row = [], cell = "", quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c !== '"') cell += c;
+      else if (text[i + 1] === '"') { cell += '"'; i++; }
+      else quoted = false;
+    } else if (c === '"') quoted = true;
+    else if (c === delim) { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(cell); out.push(row); row = []; cell = "";
+    } else cell += c;
+  }
+  if (cell !== "" || row.length) { row.push(cell); out.push(row); }
+  return out;
+}
+
+async function inflateRaw(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+// Minimal zip reader: lists entries and returns an entry's text.
+async function unzip(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), td = new TextDecoder();
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("Not a valid .xlsx (zip) file");
+  const files = {};
+  let p = dv.getUint32(eocd + 16, true);
+  for (let n = dv.getUint16(eocd + 10, true); n > 0 && dv.getUint32(p, true) === 0x02014b50; n--) {
+    const nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), commentLen = dv.getUint16(p + 32, true);
+    files[td.decode(u8.subarray(p + 46, p + 46 + nameLen))] =
+      { method: dv.getUint16(p + 10, true), size: dv.getUint32(p + 20, true), offset: dv.getUint32(p + 42, true) };
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  return {
+    names: Object.keys(files),
+    async text(name) {
+      const f = files[name];
+      if (!f) return null;
+      const start = f.offset + 30 + dv.getUint16(f.offset + 26, true) + dv.getUint16(f.offset + 28, true);
+      const data = u8.subarray(start, start + f.size);
+      return td.decode(f.method === 0 ? data : await inflateRaw(data));
+    },
+  };
+}
+
+function colIndex(ref) {
+  let n = 0;
+  for (const ch of /^([A-Z]+)/.exec(ref)[1]) n = n * 26 + ch.charCodeAt(0) - 64;
+  return n - 1;
+}
+
+// Returns {sheets: [{name, rows}], meta} for every visible sheet.
+async function parseXLSX(buf) {
+  const zip = await unzip(buf);
+  const parser = new DOMParser();
+  const xml = async name => { const t = await zip.text(name); return t ? parser.parseFromString(t, "application/xml") : null; };
+
+  const shared = [];
+  const sst = await xml("xl/sharedStrings.xml");
+  if (sst) for (const si of sst.getElementsByTagName("si")) shared.push([...si.getElementsByTagName("t")].map(t => t.textContent).join(""));
+  const dateStyles = readDateStyles(await xml("xl/styles.xml"));
+  const sheets = await listSheets(zip, xml);
+
+  const dataSheets = sheets.filter(s => s.name !== META_SHEET && !s.hidden);
+  if (!dataSheets.length) throw new Error("No worksheet found in file");
+  const out = [];
+  for (const s of dataSheets) out.push({ name: s.name, rows: readSheet(await xml(s.path), shared, dateStyles) });
+
+  const meta = {};
+  const metaSheet = sheets.find(s => s.name === META_SHEET);
+  if (metaSheet) for (const [k, v] of readSheet(await xml(metaSheet.path), shared, new Map())) if (k) meta[k] = v;
+  return { sheets: out, meta };
+}
+
+// Sheet names and their file paths, via the workbook relationships.
+async function listSheets(zip, xml) {
+  const sheets = [];
+  const wb = await xml("xl/workbook.xml"), rels = await xml("xl/_rels/workbook.xml.rels");
+  if (wb && rels) {
+    const targets = {};
+    for (const r of rels.getElementsByTagName("Relationship")) {
+      const t = r.getAttribute("Target");
+      targets[r.getAttribute("Id")] = t.startsWith("/") ? t.slice(1) : "xl/" + t.replace(/^\.\//, "");
+    }
+    for (const s of wb.getElementsByTagName("sheet")) {
+      const rid = s.getAttribute("r:id") || s.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+      if (targets[rid] && zip.names.includes(targets[rid]))
+        sheets.push({ name: s.getAttribute("name"), path: targets[rid], hidden: /hidden/i.test(s.getAttribute("state") || "") });
+    }
+  }
+  if (sheets.length) return sheets;
+  const first = zip.names.filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort()[0];
+  return first ? [{ name: "Sheet1", path: first, hidden: false }] : [];
+}
+
+// Style index -> "date" | "month" for cells whose number format is a date.
+function readDateStyles(st) {
+  const map = new Map();
+  const xfs = st && st.getElementsByTagName("cellXfs")[0];
+  if (!xfs) return map;
+  const custom = {};
+  for (const f of st.getElementsByTagName("numFmt")) custom[f.getAttribute("numFmtId")] = f.getAttribute("formatCode") || "";
+  [...xfs.getElementsByTagName("xf")].forEach((xf, i) => {
+    const id = +xf.getAttribute("numFmtId");
+    if ((id >= 14 && id <= 17) || id === 22) { map.set(i, id === 17 ? "month" : "date"); return; }
+    const code = (custom[id] || "").replace(/"[^"]*"|\[[^\]]*\]|\\./g, "").toLowerCase();
+    if (/[dy]/.test(code)) map.set(i, /d/.test(code) ? "date" : "month");
+  });
+  return map;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function serialToText(n, kind) {
+  const d = serialToUtc(n);
+  if (isNaN(d)) return String(n);
+  return kind === "month"
+    ? `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+    : `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${d.getUTCFullYear()}`;
+}
+
+function cellText(c, shared, dateStyles) {
+  const type = c.getAttribute("t");
+  if (type === "inlineStr") return [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+  const v = c.getElementsByTagName("v")[0];
+  if (!v) return "";
+  const val = v.textContent;
+  if (type === "s") return shared[parseInt(val, 10)] ?? "";
+  if ((type && type !== "n") || val === "" || !isFinite(Number(val))) return val;
+  const kind = dateStyles.get(+(c.getAttribute("s") || 0));
+  if (kind) return serialToText(Number(val), kind);
+  if (/e/i.test(val)) return BigInt(Math.round(Number(val))).toString();   // phone numbers stored as 9.1234567E7
+  return val.replace(/^(-?\d+)\.0+$/, "$1");
+}
+
+function readSheet(sheetXml, shared, dateStyles) {
+  return [...sheetXml.getElementsByTagName("row")].map(rowEl => {
+    const arr = [];
+    for (const c of rowEl.getElementsByTagName("c")) {
+      const ref = c.getAttribute("r");
+      arr[ref ? colIndex(ref) : arr.length] = cellText(c, shared, dateStyles);
+    }
+    return Array.from(arr, v => v ?? "");
+  });
+}
+
+async function readFileAsSheets(file) {
+  const ext = file.name.split(".").pop().toLowerCase();
+  if (ext === "xlsx") {
+    if (typeof DecompressionStream === "undefined")
+      throw new Error("This browser is too old to open .xlsx files. Please update Chrome, Edge or Safari (iPhone/iPad: iOS 16.4 or later).");
+    return parseXLSX(await file.arrayBuffer());
+  }
+  if (["csv", "tsv", "txt"].includes(ext)) return { sheets: [{ name: "Data", rows: parseCSV(await file.text()) }], meta: {} };
+  throw new Error("Please use a .xlsx or .csv file (.xls must be re-saved as .xlsx in Excel)");
+}
+
+/* =====================================================================
+   7. COMBINING SHEETS INTO ONE LIST
+   ===================================================================== */
+// All sheets become one list (columns matched by header name, plus a "Sheet" column).
+// The original layout is kept so export writes the same sheets back.
+// Our "reminder sent" columns are split out into logs.
+// Loose match across sheets: case, punctuation and a plural "s" are ignored ("Contact No." = "Contact No", "Results" = "Result").
+// Headers with no a-z/0-9 (e.g. Chinese) are matched exactly.
+const headerKey = h => h.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
+  .split(" ").map(w => w.length > 3 ? w.replace(/s$/, "") : w).join(" ") || h.toLowerCase();
+
+function combineSheets(sheetList) {
+  const headerIdx = new Map(), combined = [];
+  // usedInSheet: two columns of the same sheet must never merge, so a clash gets its own key
+  const addHeader = (h, usedInSheet) => {
+    let k = headerKey(h);
+    while (usedInSheet.has(k)) k += "#";
+    usedInSheet.add(k);
+    if (!headerIdx.has(k)) { headerIdx.set(k, combined.length); combined.push(h); }
+    return headerIdx.get(k);
+  };
+  const logTabByHeader = Object.fromEntries(TABS.map(t => [LOG_COLS[t].toLowerCase(), t]));
+
+  const parts = [];
+  for (const sh of sheetList) {
+    const table = sh.rows.filter(r => r.some(c => String(c).trim() !== ""));
+    if (table.length < 2) continue;
+    const width = table.reduce((w, r) => Math.max(w, r.length), 0);   // no spread: safe for huge sheets
+    const hdr = Array.from({ length: width }, (_, i) => String(table[0][i] ?? "").trim());
+    const keep = [], logAt = {}, usedInSheet = new Set();
+    hdr.forEach((h, i) => { const tab = logTabByHeader[h.toLowerCase()]; if (tab) logAt[tab] = i; else keep.push(i); });
+    parts.push({
+      name: sh.name, keep, logAt,
+      headers: keep.map(i => hdr[i]),
+      map: keep.map(i => hdr[i] ? addHeader(hdr[i], usedInSheet) : NO_COL),     // unnamed columns: kept for export only
+      body: table.slice(1).map(r => Array.from({ length: width }, (_, i) => String(r[i] ?? "").trim())),
+    });
+  }
+  if (!parts.length) throw new Error("No data rows found. Check the sheet has a header row and data under it.");
+  const sheetCol = parts.length > 1 ? addHeader("Sheet", new Set()) : NO_COL;
+
+  const result = { headers: combined, rows: [], sheets: [], sourceRows: [], logs: [] };
+  parts.forEach((p, sheetIdx) => {
+    result.sheets.push({ name: p.name, headers: p.headers, map: p.map });
+    for (const r of p.body) {
+      const cells = p.keep.map(i => r[i]);
+      const row = new Array(combined.length).fill("");
+      cells.forEach((v, j) => { if (p.map[j] >= 0) row[p.map[j]] = v; });
+      if (sheetCol >= 0) row[sheetCol] = p.name;
+      const log = {};
+      for (const tab of TABS) if (p.logAt[tab] !== undefined) log[tab] = parseLogTime(r[p.logAt[tab]]);
+      result.rows.push(row);
+      result.sourceRows.push({ sheet: sheetIdx, cells });
+      result.logs.push(log);
+    }
+  });
+  return result;
+}
+
+/* =====================================================================
+   8. RECORDS (one per person)
+   ===================================================================== */
+// Short hash of name + HP, so reminders and edits follow a person even if rows move.
+function personKey(name, phone) {
+  const s = norm(name) + "|" + normPhone(phone);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36);
+}
+
+// Name/HP derived fields; called again when either is edited.
+function setIdentity(rec) {
+  rec.name = (rec.raw[cols.name] || "").trim();
+  rec.phone = (rec.raw[cols.phone] || "").trim();
+  rec.phoneNorm = normPhone(rec.phone);
+  rec.nameNorm = norm(rec.name);
+  rec.tokens = nameTokens(rec.name);
+  rec.key = personKey(rec.name, rec.phone);
+}
+
+function buildRecords() {
+  records = [];
+  const perLine = {};
+  rows.forEach((raw, idx) => {
+    if (!(raw[cols.name] || "").trim() && !(raw[cols.phone] || "").trim()) return;
+    const line = LINES[records.length % LINES.length];
+    perLine[line.code] = (perLine[line.code] || 0) + 1;
+    const rec = { idx, raw, code: line.code + perLine[line.code], color: line.color };
+    setIdentity(rec);
+    records.push(rec);
+  });
+  recordsByRow = new Map(records.map(r => [r.idx, r]));
+}
+
+/* =====================================================================
+   9. LOADING DATA
+   ===================================================================== */
+function loadData(sheetList, label, meta, isDemo) {
+  const data = combineSheets(sheetList);
+  const found = detectColumns(data.headers);
+  // checked before anything is replaced, so a wrong file leaves the current list on screen
+  if (!data.rows.some(r => (r[found.name] || "").trim() || (r[found.phone] || "").trim()))
+    throw new Error("No names or HP numbers found. Check the sheet has a name column and an HP column with values.");
+  if (demoMode && !isDemo) { actions = store.load(STORE.actions, {}); edits = store.load(STORE.edits, {}); }   // forget sample-data work
+  headers = data.headers; rows = data.rows; sourceSheets = data.sheets; sourceRows = data.sourceRows;
+  savedRows = rows.map(r => r.slice());
+  fileMeta = meta || {}; fileName = sourceFileName = label; demoMode = isDemo;
+  saveHandle = null; clearTimeout(autoSaveTimer);         // never auto-save the previous file's changes
+  loadCount++;                                            // saves still in progress for the previous file are ignored
+  cols = found;
+  buildRecords();
+  fileActions = {};
+  for (const rec of records) mergeLatest(fileActions, rec.key, data.logs[rec.idx]);
+  applyFileSettings();
+  resetViews();
+  $("status").innerHTML = isDemo
+    ? `<span class="warn">SAMPLE DATA</span> &mdash; ${records.length} made-up records. Load your real sheet to start.`
+    : `<span class="ok">LOADED</span> ${esc(label)} &mdash; ${records.length} records` +
+      (fileMeta.savedAt ? ` &middot; last saved by this app ${esc(fmtWhen(Date.parse(fileMeta.savedAt)))}` : "") +
+      missingColumns().map(m => `<br><span class="warn">Check: ${esc(m)}</span>`).join("");
+}
+
+// A key column missing from one sheet makes that sheet's people look blank (e.g. everyone NSFIT), so say so.
+function missingColumns() {
+  const keyCols = [cols.name, cols.phone, cols.lastFy, cols.thisFy, cols.elig, cols.track, cols.shoot].filter(c => c >= 0);
+  return sourceSheets.flatMap(s => keyCols.filter(c => !s.map.includes(c)).map(c => `sheet "${s.name}" has no "${headers[c]}" column`));
+}
+
+// Load, check for newer work on this device, then open the app.
+async function openSheets(sheetList, label, meta, isDemo) {
+  loadData(sheetList, label, meta, isDemo);
+  await reconcile();
+  closeGate();
+}
+
+async function handleFile(file) {
+  if (!$("conflict").hidden) { toast("First choose Keep or Use file in the popup"); return; }   // the popup belongs to the current load
+  try {
+    const { sheets, meta } = await readFileAsSheets(file);
+    await openSheets(sheets, file.name, meta, false);
+    toast(`Loaded ${records.length} records` + (sourceSheets.length > 1 ? ` from ${sourceSheets.length} sheets` : ""));
+  } catch (e) {
+    const msg = `<span class="warn">ERROR</span> ${esc(e.message || e)}`;
+    $("gateErr").innerHTML = msg;
+    $("status").innerHTML = msg;
+  }
+}
+
+/* =====================================================================
+   10. REMINDER LOG
+   ===================================================================== */
+const sentAt = (rec, tab) => (actions[rec.key] || {})[tab] || 0;
+const saveActions = () => { if (!demoMode) store.save(STORE.actions, actions); };   // sample data is never stored
+
+function recordAction(rec, tab) {
+  (actions[rec.key] ||= {})[tab] = minuteNow();
+  saveActions();
+  dataChanged(tab === view.tab ? { sentTo: rec } : {});
+}
+
+// Reminders on this device that the loaded file does not contain yet.
+function unsentActions() {
+  const out = [], seen = new Set();
+  for (const rec of records) {
+    if (seen.has(rec.key)) continue;
+    seen.add(rec.key);
+    for (const tab of TABS) {
+      const mine = sentAt(rec, tab), inFile = (fileActions[rec.key] || {})[tab] || 0;
+      if (mine > inFile) out.push({ rec, tab, ts: mine });
+    }
+  }
+  return out;
+}
+
+/* =====================================================================
+   11. FIELD EDITS
+   ===================================================================== */
+const saveEdits = () => { if (!demoMode) store.save(STORE.edits, edits); };
+// Edits are stored under the person's name+HP as they are in the file, so they can be matched on reload.
+const fileKeyOf = idx => personKey(savedRows[idx][cols.name] || "", savedRows[idx][cols.phone] || "");
+
+// Only real columns of the person's own sheet can be edited (not the "Sheet" label).
+function isEditable(rec, col) {
+  const src = sourceRows[rec.idx];
+  return !!src && sourceSheets[src.sheet].map.includes(col);
+}
+
+// Writes a value into the row and its export copy. Keeps reminders attached if name/HP change.
+function applyCell(rec, col, value) {
+  rows[rec.idx][col] = value;
+  const src = sourceRows[rec.idx], j = sourceSheets[src.sheet].map.indexOf(col);
+  if (j >= 0) src.cells[j] = value;
+  if (col !== cols.name && col !== cols.phone) return;
+  const oldKey = rec.key;
+  setIdentity(rec);
+  if (oldKey === rec.key) return;
+  mergeLatest(actions, rec.key, actions[oldKey]);
+  mergeLatest(fileActions, rec.key, fileActions[oldKey]);
+  saveActions();
+}
+
+// Ctrl+Z on the Find tab walks back through these (cleared when another file is loaded).
+const undoStack = [];
+
+// User edit: returns true if the value changed.
+function setCell(rec, col, value, { undoable = true } = {}) {
+  value = String(value).trim();
+  const before = rows[rec.idx][col] || "";
+  if (before === value) return false;
+  if (undoable) undoStack.push({ rec, col, before });
+  const key = fileKeyOf(rec.idx);
+  (edits[key] ||= {})[headers[col].toLowerCase()] = { v: value, ts: Date.now() };
+  saveEdits();
+  applyCell(rec, col, value);
+  dataChanged();
+  return true;
+}
+
+function undoLastEdit() {
+  const last = undoStack.pop();
+  if (!last) { toast("Nothing to undo"); return; }
+  setCell(last.rec, last.col, last.before, { undoable: false });
+  showResult(last.rec, true);
+  toast(`Undid ${headers[last.col]}`);
+}
+
+function changedCellCount() {
+  let n = 0;
+  rows.forEach((r, i) => r.forEach((v, c) => { if ((v || "") !== (savedRows[i][c] || "")) n++; }));
+  return n;
+}
+
+// Edits on this device newer than the loaded file.
+function pendingEdits() {
+  const savedAt = fileMeta.savedAt ? Date.parse(fileMeta.savedAt) : 0;
+  const lowerHeaders = headers.map(h => h.toLowerCase());
+  const out = [];
+  for (const rec of records) {
+    for (const [h, { v, ts }] of Object.entries(edits[rec.key] || {})) {
+      const col = lowerHeaders.indexOf(h);
+      const alreadyInFile = (rows[rec.idx][col] || "") === v || (savedAt && savedAt >= ts);
+      if (col >= 0 && isEditable(rec, col) && !alreadyInFile) out.push({ rec, col, v, ts, key: rec.key, header: h });
+    }
+  }
+  return out;
+}
+
+/* =====================================================================
+   12. OUTDATED-FILE CHECK
+   ===================================================================== */
+// If this device has reminders or edits the file lacks, ask before using the file.
+async function reconcile() {
+  const unsent = unsentActions(), edited = pendingEdits();
+  const total = unsent.length + edited.length;
+  const keepMine = () => {
+    for (const e of edited) applyCell(e.rec, e.col, e.v);
+    for (const [key, logs] of Object.entries(fileActions)) mergeLatest(actions, key, logs);
+    saveActions();
+    dataChanged();
+  };
+  const useFile = () => {
+    for (const rec of records) {
+      if (fileActions[rec.key]) actions[rec.key] = { ...fileActions[rec.key] };
+      else delete actions[rec.key];
+    }
+    for (const e of edited) {
+      delete edits[e.key][e.header];
+      if (!Object.keys(edits[e.key]).length) delete edits[e.key];
+    }
+    saveActions(); saveEdits();
+    dataChanged();
+  };
+  if (!total) { keepMine(); return; }
+
+  const lines = [
+    ...edited.map(e => `<li>${esc(e.rec.name)} &mdash; ${esc(headers[e.col])} changed to &ldquo;${esc(e.v)}&rdquo;, ${esc(fmtWhen(e.ts))}</li>`),
+    ...unsent.map(u => `<li>${esc(u.rec.name)} &mdash; ${TAB_LABEL[u.tab]} reminder sent, ${esc(fmtWhen(u.ts))}</li>`),
+  ];
+  $("cfCount").textContent = total;
+  $("cfDate").textContent = fmtWhen(Math.max(...unsent.map(u => u.ts), ...edited.map(e => e.ts)));
+  $("cfList").innerHTML = lines.slice(0, 8).join("") + (lines.length > 8 ? `<li>...and ${lines.length - 8} more</li>` : "");
+  $("conflict").hidden = false;
+  return new Promise(resolve => {
+    $("cfKeep").onclick = () => { $("conflict").hidden = true; keepMine(); toast("Kept your edits"); resolve(); };
+    $("cfOverride").onclick = () => {
+      if (!confirm(`Discard ${total} update(s) made on this device and use the file as-is?`)) return;
+      $("conflict").hidden = true; useFile(); toast("Using file as-is"); resolve();
+    };
+  });
+}
+
+/* =====================================================================
+   13. SAVING (Excel writer, download, auto-save)
+   ===================================================================== */
+// reminders + edited cells not in the file, plus 1 if name / FY / wording changed since the last save
+const unsavedCount = () => unsentActions().length + changedCellCount() + (settingsEdited() ? 1 : 0);
+
+function updateSaveBar() {
+  const n = unsavedCount();
+  document.body.classList.toggle("has-unsaved", n > 0);
+  $("saveBar").hidden = n === 0;
+  $("saveCount").textContent = n;
+  $("saveWord").textContent = n === 1 ? "update" : "updates";
+  $("dlState").innerHTML = (n ? `<span class="warn">${plural(n, "update")} not in your Excel yet</span>` : `<span class="ok">Excel is up to date</span>`) +
+    (saveHandle ? ` &middot; auto-saving to <b>${esc(saveHandle.name)}</b>` : "");
+}
+
+// --- zip (stored, no compression) ---
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(u8) {
+  let c = 0xffffffff;
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function zipStore(files) {
+  const enc = new TextEncoder(), parts = [], central = [];
+  const now = new Date();
+  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  let offset = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true); local.setUint16(6, 0x0800, true);
+    local.setUint16(10, dosTime, true); local.setUint16(12, dosDate, true); local.setUint32(14, crc, true);
+    local.setUint32(18, data.length, true); local.setUint32(22, data.length, true); local.setUint16(26, name.length, true);
+    parts.push(new Uint8Array(local.buffer), name, data);
+    const dir = new DataView(new ArrayBuffer(46));
+    dir.setUint32(0, 0x02014b50, true); dir.setUint16(4, 20, true); dir.setUint16(6, 20, true); dir.setUint16(8, 0x0800, true);
+    dir.setUint16(12, dosTime, true); dir.setUint16(14, dosDate, true); dir.setUint32(16, crc, true);
+    dir.setUint32(20, data.length, true); dir.setUint32(24, data.length, true); dir.setUint16(28, name.length, true);
+    dir.setUint32(42, offset, true);
+    central.push(new Uint8Array(dir.buffer), name);
+    offset += 30 + name.length + data.length;
+  }
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, central.reduce((s, p) => s + p.length, 0), true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: XLSX_MIME });
+}
+
+// --- worksheet xml ---
+const xmlEsc = s => String(s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "")
+  .replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function colName(i) {
+  let s = "";
+  for (i++; i; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s;
+  return s;
+}
+const STYLE_BOLD = 1, STYLE_DATE = 2;
+
+function cellXml(value, ref, isHeader) {
+  const v = String(value ?? "");
+  if (v === "") return "";
+  const style = isHeader ? ` s="${STYLE_BOLD}"` : "";
+  if (/^-?(0|[1-9]\d{0,14})(\.\d+)?$/.test(v)) return `<c r="${ref}"${style}><v>${v}</v></c>`;
+  const dmy = !isHeader && /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);       // d/m/yyyy back to a real date
+  if (dmy) {
+    const [, d, m, y] = dmy.map(Number);
+    if (isRealDate(y, m, d)) return `<c r="${ref}" s="${STYLE_DATE}"><v>${dateToSerial(y, m, d)}</v></c>`;
+  }
+  return `<c r="${ref}"${style} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+}
+
+function sheetXml(table, boldHeader) {
+  const body = table.map((row, r) =>
+    `<row r="${r + 1}">${row.map((v, c) => cellXml(v, colName(c) + (r + 1), boldHeader && r === 0)).join("")}</row>`).join("");
+  // column widths sized to content so dates don't show as ####
+  const widths = [];
+  table.forEach(row => row.forEach((v, c) => { widths[c] = Math.max(widths[c] || 11, Math.min(50, String(v ?? "").length + 2)); }));
+  const colsXml = widths.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>` : "";
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${colsXml}<sheetData>${body}</sheetData></worksheet>`;
+}
+
+// The original sheets with edits, plus "reminder sent" columns and the hidden settings sheet.
+function buildXlsx() {
+  const tables = sourceSheets.map(s => [[...s.headers, LOG_COLS.ippt, LOG_COLS.shoot]]);
+  sourceRows.forEach((src, idx) => {
+    const rec = recordsByRow.get(idx);
+    const sent = rec ? actions[rec.key] || {} : {};
+    tables[src.sheet].push([...src.cells, ...TABS.map(tab => sent[tab] ? fmtLogTime(sent[tab]) : "")]);
+  });
+  const meta = [["key", "value"], ["savedAt", new Date().toISOString()], ["app", "SPF Command Link"], ["source", fileName],
+                ["settings", JSON.stringify(settingsSnapshot())]];
+  const sheets = [...sourceSheets.map((s, i) => ({ name: s.name, xml: sheetXml(tables[i], true), hidden: false })),
+                  { name: META_SHEET, xml: sheetXml(meta, false), hidden: true }];
+
+  const NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+  const R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+  const PKG = "http://schemas.openxmlformats.org/package/2006/relationships";
+  const OFFICE = "application/vnd.openxmlformats-officedocument.spreadsheetml";
+  const HEAD = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`;
+  const each = fn => sheets.map(fn).join("");
+  return zipStore([
+    { name: "[Content_Types].xml", text: `${HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="${OFFICE}.sheet.main+xml"/>${each((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="${OFFICE}.worksheet+xml"/>`)}<Override PartName="/xl/styles.xml" ContentType="${OFFICE}.styles+xml"/></Types>` },
+    { name: "_rels/.rels", text: `${HEAD}<Relationships xmlns="${PKG}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+    { name: "xl/workbook.xml", text: `${HEAD}<workbook xmlns="${NS}" xmlns:r="${R}"><sheets>${each((s, i) => `<sheet name="${xmlEsc(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ""} r:id="rId${i + 1}"/>`)}</sheets></workbook>` },
+    { name: "xl/_rels/workbook.xml.rels", text: `${HEAD}<Relationships xmlns="${PKG}">${each((_, i) => `<Relationship Id="rId${i + 1}" Type="${R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`)}<Relationship Id="rId${sheets.length + 1}" Type="${R}/styles" Target="styles.xml"/></Relationships>` },
+    // styles: 0 normal, 1 bold (header), 2 date
+    { name: "xl/styles.xml", text: `${HEAD}<styleSheet xmlns="${NS}"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>` },
+    ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, text: s.xml })),
+  ]);
+}
+
+function exportFileName() {
+  const d = new Date();
+  const base = (fileName && !demoMode ? fileName : "SPF_list")
+    .replace(/\.(xlsx|csv|tsv|txt)$/i, "").replace(/_updated_\d{4}-\d{2}-\d{2}(_\d{4})?$/, "");
+  return `${base}_updated_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.xlsx`;
+}
+
+async function writeToHandle(handle, blob) {
+  const w = await handle.createWritable();
+  await w.write(blob);
+  await w.close();
+}
+
+function triggerDownload(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+// Chrome/Edge desktop: Save As, then keep auto-saving to that file. Others: normal download.
+async function downloadExcel() {
+  if (!records.length) return;
+  const name = exportFileName(), snapshot = saveSnapshot(), blob = buildXlsx(), original = sourceFileName, madeByApp = !!fileMeta.savedAt;
+  try {
+    if (window.showSaveFilePicker && window.top === window) {
+      const handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: "Excel", accept: { [XLSX_MIME]: [".xlsx"] } }] });
+      if (handle.name.toLowerCase() === original.toLowerCase() && !madeByApp &&
+          !confirm(`This replaces your original file "${original}". Its colours, formulas and hidden sheets will be lost. Save over it anyway?`)) {
+        toast("Not saved");
+        return;
+      }
+      await writeToHandle(handle, blob);
+      if (snapshot.load !== loadCount) { toast("Saved " + handle.name); return; }   // another file was loaded meanwhile: don't tie it to this file
+      saveHandle = handle;
+      fileName = handle.name || name;
+    } else {
+      triggerDownload(blob, name);
+      fileName = name;
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return;   // save dialog cancelled
+    toast("Could not save: " + (e.message || e));
+    return;
+  }
+  markSaved(snapshot);
+  toast("Saved " + fileName);
+  if (unsavedCount()) scheduleAutoSave();   // changes made while the Save As dialog was open
+}
+
+// The state a save writes. Taken together with buildXlsx(), so changes made while the file is
+// being written are not wrongly counted as saved. `load` ties it to the file that was loaded then.
+const saveSnapshot = () => ({ actions: JSON.parse(JSON.stringify(actions)), rows: rows.map(r => r.slice()), settingsVersion, load: loadCount });
+
+function markSaved(snapshot) {
+  if (snapshot.load !== loadCount) return;   // a different file is loaded now
+  fileActions = snapshot.actions;
+  savedRows = snapshot.rows;
+  savedSettingsVersion = snapshot.settingsVersion;
+  updateSaveBar();
+  if (selected) showResult(selected, true);   // clear EDITED tags on an open ticket
+}
+
+function scheduleAutoSave() {
+  if (!saveHandle) return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(async () => {
+    try {
+      const snapshot = saveSnapshot();
+      await writeToHandle(saveHandle, buildXlsx());
+      markSaved(snapshot);
+    } catch {
+      toast("Auto-save failed. Close the file in Excel, then press Download.");
+    }
+  }, 1200);
+}
+
+/* =====================================================================
+   14. MESSAGE SETTINGS
+   ===================================================================== */
+const settingsSnapshot = () => ({ me: settings.me, lastFy: settings.lastFy, thisFy: settings.thisFy, deadline: settings.deadline, tpl: settings.tpl });
+
+// Takes only known keys and templates, so old or foreign data can't break anything.
+function applySettings(s) {
+  if (!s) return;
+  for (const k of Object.keys(SETTING_INPUTS)) if (typeof s[k] === "string") settings[k] = s[k];
+  if (s.openIn === "app" || s.openIn === "web") settings.openIn = s.openIn;
+  for (const tab of TABS) for (const k of Object.keys(DEF_TPL[tab]))
+    if (typeof s.tpl?.[tab]?.[k] === "string") settings.tpl[tab][k] = s.tpl[tab][k];
+}
+const saveSettings = () => store.save(STORE.settings, { ...settingsSnapshot(), openIn: settings.openIn });
+
+// On load: settings saved inside the file win over this device's, but the FY labels always
+// follow the sheet's own FY columns (a newer FY column must not keep an old label).
+function applyFileSettings() {
+  if (fileMeta.settings) {
+    try { applySettings(JSON.parse(fileMeta.settings)); saveSettings(); } catch {}
+  }
+  if (cols.thisFyNum !== null) {
+    settings.thisFy = "FY" + pad(cols.thisFyNum);
+    settings.lastFy = "FY" + pad((cols.thisFyNum + 99) % 100);
+  }
+  savedSettingsVersion = settingsVersion;
+}
+
+function settingsChanged() {
+  settingsVersion++;
+  saveSettings();
+  dataChanged({ soon: true });
+}
+
+function fillTemplate(tpl, rec) {
+  const values = { name: rec.name, me: settings.me.trim(), lastFY: settings.lastFy, thisFY: settings.thisFy, deadline: settings.deadline };
+  if (!values.me) tpl = tpl.replaceAll(", this is {me}", "");
+  // a function replacer inserts values literally (a "$&" in a name stays "$&")
+  return tpl.replace(/\{(name|me|lastFY|thisFY|deadline)\}/g, (_, key) => values[key]);
+}
+
+// Chat link with optional pre-filled message.
+function waLink(rec, msg = "") {
+  const text = msg ? encodeURIComponent(msg) : "";
+  return settings.openIn === "app"
+    ? `whatsapp://send?phone=${COUNTRY_CODE}${rec.phoneNorm}${text ? "&text=" + text : ""}`
+    : `https://wa.me/${COUNTRY_CODE}${rec.phoneNorm}${text ? "?text=" + text : ""}`;
+}
+
+const templateFor = (rec, tab) => settings.tpl[tab][statusOf(rec, tab)];
+const canSend = (rec, tab) => !!templateFor(rec, tab) && hasValidHp(rec);
+const chatLink = (rec, tab) => waLink(rec, fillTemplate(templateFor(rec, tab), rec));
+
+/* =====================================================================
+   15. VIEW REFRESH
+   ===================================================================== */
+// Called after anything changes the data, reminders or settings.
+// soon = while typing: the redraw waits until typing pauses (send links read the latest wording when clicked).
+// sentTo = only this person's reminder log changed (see renderSentRow).
+let renderTimer = 0;
+function dataChanged({ soon = false, sentTo = null } = {}) {
+  updateSaveBar();
+  scheduleAutoSave();
+  if (sentTo && !$("tabRemind").hidden && hasTabData(view.tab)) renderSentRow(sentTo);
+  else if (soon) { clearTimeout(renderTimer); renderTimer = setTimeout(renderVisibleTab, 200); }
+  else renderVisibleTab();
+}
+
+// Only the tab on screen is redrawn; the other is redrawn when it is opened (showTab).
+function renderVisibleTab() {
+  clearTimeout(renderTimer);
+  if ($("tabRemind").hidden) { renderStats(); renderRoster(); }
+  else renderRemindKeepScroll();
+}
+
+// Fresh state for a newly loaded file.
+function resetViews() {
+  Object.assign(view, { filter: "ALL", group: "ALL", rosterFilter: "ALL" });
+  batch.queue = [];
+  undoStack.length = 0;
+  fillRemindSelects();
+  $("rmTemplates").dataset.tab = "";
+  hideResult();
+  ["qName", "qPhone"].forEach(id => $(id).value = "");
+  closeSuggestions();
+  updateSaveBar();
+  renderVisibleTab();
+}
+
+/* ---------- gate + tabs ---------- */
+function closeGate() { $("gate").hidden = true; document.body.classList.remove("gated"); }
+function openGate() { $("gate").hidden = false; document.body.classList.add("gated"); $("gateErr").textContent = ""; }
+
+function showTab(which) {
+  const remind = which === "remind";
+  $("tabFind").hidden = remind;
+  $("tabRemind").hidden = !remind;
+  $("tabBtnFind").classList.toggle("active", !remind);
+  $("tabBtnRemind").classList.toggle("active", remind);
+  clearTimeout(renderTimer);
+  if (remind) renderRemind();
+  else { renderStats(); renderRoster(); }
+}
+
+/* =====================================================================
+   16. FIND OFFICER TAB: search dropdowns
+   ===================================================================== */
+function highlight(text, q) {
+  const i = q ? text.toLowerCase().indexOf(q.toLowerCase()) : -1;
+  if (i < 0) return esc(text);
+  return esc(text.slice(0, i)) + "<mark>" + esc(text.slice(i, i + q.length)) + "</mark>" + esc(text.slice(i + q.length));
+}
+
+const searchBoxes = {
+  name: {
+    input: $("qName"), list: $("sugName"), search: searchName, items: [], active: -1,
+    main: (rec, q) => highlight(rec.name, q), sub: rec => esc(displayPhone(rec)),
+  },
+  phone: {
+    input: $("qPhone"), list: $("sugPhone"), search: searchPhone, items: [], active: -1,
+    main: (rec, q) => highlight(displayPhone(rec), fmtPhone(normPhone(q))), sub: rec => esc(rec.name),
+  },
+};
+
+function renderSuggestions(box) {
+  const q = box.input.value.trim();
+  if (!q) { box.list.classList.remove("open"); box.items = []; return; }
+  box.items = box.search(q);
+  box.active = box.items.length ? 0 : -1;
+  box.list.innerHTML = box.items.length
+    ? box.items.map((m, i) => `<div class="opt${i === 0 ? " active" : ""}" data-i="${i}">
+        ${codeBadge(m.rec)}<span class="main">${box.main(m.rec, q)}</span><span class="sub">${box.sub(m.rec)}</span>
+        ${m.fuzzy ? '<span class="tag">~ CLOSE</span>' : ""}</div>`).join("")
+    : `<div class="none">No match found. Check spelling or digits.</div>`;
+  box.list.classList.add("open");
+}
+
+function closeSuggestions() { for (const box of Object.values(searchBoxes)) box.list.classList.remove("open"); }
+
+function moveActive(box, i) {
+  if (!box.items.length) return;
+  box.active = (i + box.items.length) % box.items.length;
+  [...box.list.querySelectorAll(".opt")].forEach((el, n) => el.classList.toggle("active", n === box.active));
+  box.list.querySelector(".opt.active")?.scrollIntoView({ block: "nearest" });
+}
+
+function chooseSuggestion(box, i) {
+  const m = box.items[i];
+  if (!m) return;
+  closeSuggestions();
+  showResult(m.rec);
+}
+
+for (const box of Object.values(searchBoxes)) {
+  box.input.addEventListener("input", () => renderSuggestions(box));
+  box.input.addEventListener("focus", () => { if (box.input.value.trim()) renderSuggestions(box); });
+  box.input.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown") { e.preventDefault(); box.list.classList.contains("open") ? moveActive(box, box.active + 1) : renderSuggestions(box); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); moveActive(box, box.active - 1); }
+    else if (e.key === "Enter") { e.preventDefault(); if (box.active >= 0) chooseSuggestion(box, box.active); }
+    else if (e.key === "Escape") closeSuggestions();
+  });
+  box.list.addEventListener("mousedown", e => {
+    const opt = e.target.closest(".opt");
+    if (!opt) return;
+    e.preventDefault();
+    chooseSuggestion(box, +opt.dataset.i);
+  });
+}
+document.addEventListener("click", e => { if (!e.target.closest(".search-box")) closeSuggestions(); });
+document.querySelectorAll("[data-clear]").forEach(btn => btn.addEventListener("click", () => {
+  const input = $(btn.dataset.clear);
+  input.value = ""; input.focus(); closeSuggestions();
+}));
+
+/* =====================================================================
+   17. FIND OFFICER TAB: result ticket + editing
+   ===================================================================== */
+function fieldHtml(rec, col) {
+  const value = rec.raw[col] || "";
+  const shown = col === cols.phone ? fmtPhone(rec.phoneNorm || value) : value;
+  const editable = isEditable(rec, col);
+  const edited = value !== (savedRows[rec.idx][col] || "");
+  const kind = col === cols.name ? " primary" : col === cols.phone ? " phone" : "";
+  return `<div class="field${kind}${editable ? " editable" : ""}${edited ? " edited" : ""}" data-col="${col}">
+    <div class="k">${esc(headers[col])}${edited ? '<span class="ed-tag">EDITED</span>' : ""}${editable ? '<span class="pen">&#9998;</span>' : ""}</div>
+    <div class="v${shown ? "" : " empty"}">${shown ? esc(shown) : "&mdash;"}</div></div>`;
+}
+
+// quiet = redraw in place without the pop-in animation and scroll
+function showResult(rec, quiet = false) {
+  selected = rec;
+  $("resCode").textContent = rec.code;
+  $("resCode").style.background = rec.color;
+  $("resTitle").style.background = rec.color;
+  $("resName").textContent = rec.name || "(no name)";
+  $("fields").innerHTML = headers.map((_, col) => fieldHtml(rec, col)).join("");
+  $("openWa").hidden = !hasValidHp(rec);
+  $("copyPhone").hidden = !rec.phoneNorm;
+  if (quiet) return;
+  const el = $("result");
+  el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function hideResult() { $("result").classList.remove("show"); selected = null; }
+
+// Click a field to edit it: Enter or clicking away saves, Esc cancels.
+function startEditing(fieldEl) {
+  const rec = selected, col = +fieldEl.dataset.col;
+  const input = document.createElement("textarea");
+  input.className = "edit-in";
+  input.value = rec.raw[col] || "";
+  input.rows = Math.min(6, Math.max(1, Math.ceil(input.value.length / 28)));
+  if (col === cols.phone) input.inputMode = "tel";
+  fieldEl.querySelector(".v").replaceWith(input);
+  input.focus(); input.select();
+
+  let finished = false;
+  const finish = save => {
+    if (finished) return;
+    finished = true;
+    if (save && setCell(rec, col, input.value)) toast(`${headers[col]} updated`);
+    showResult(rec, true);
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") finish(false);
+  });
+  input.addEventListener("blur", () => finish(true));
+}
+
+$("fields").addEventListener("click", e => {
+  const fieldEl = e.target.closest(".field.editable");
+  if (!fieldEl || !selected || fieldEl.querySelector("textarea")) return;
+  startEditing(fieldEl);
+});
+$("copyPhone").addEventListener("click", async () => {
+  if (!selected) return;
+  const num = "+" + COUNTRY_CODE + selected.phoneNorm;
+  try { await navigator.clipboard.writeText(num); toast("Copied " + num); }
+  catch { toast("Copy blocked by browser"); }
+});
+$("openWa").addEventListener("click", () => {
+  if (selected) window.open(waLink(selected), "_blank", "noopener");
+});
+
+/* =====================================================================
+   18. FIND OFFICER TAB: stat boxes + full list
+   ===================================================================== */
+function statBox(title, color, cleared, total, note) {
+  const pct = total ? Math.round((cleared / total) * 100) : 0;
+  return `<div class="stat"><div class="k" style="background:${color}">${title}</div>
+    <div class="v">${total ? `${cleared}<small> / ${total}</small>` : "&mdash;"}</div>
+    <div class="bar"><i style="width:${pct}%;background:${color}"></i></div>
+    <div class="sub">${note}</div></div>`;
+}
+
+function renderStats() {
+  if (!records.length) return;
+  const total = records.length;
+  const ippt = hasIpptData() ? records.filter(ipptCleared).length : 0;
+  const shoot = hasShootData() ? records.filter(shootCleared).length : 0;
+  $("stats").innerHTML =
+    statBox("IPPT", "var(--ewl)", ippt, hasIpptData() ? total : 0, hasIpptData()
+      ? `cleared (passed ${esc(settings.thisFy)} or not eligible) &middot; ${total - ippt} outstanding`
+      : "No IPPT columns in this sheet") +
+    statBox("SHOOTING", "var(--dtl)", shoot, hasShootData() ? total : 0, hasShootData()
+      ? `attempted &middot; ${total - shoot} not attempted`
+      : "No shooting column in this sheet");
+}
+
+function rosterRowHtml(rec, priority) {
+  const pills = [
+    hasIpptData() ? statusPill(ipptStatus(rec), "IPPT: ") : "",
+    hasShootData() ? statusPill(shootStatus(rec), "Shoot: ") : "",
+  ].join("");
+  return `<div class="ro p${priority}" data-idx="${rec.idx}">
+    ${codeBadge(rec)}<span class="nm">${esc(rec.name)}</span><span class="ph">${esc(displayPhone(rec))}</span>${pills}</div>`;
+}
+
+function renderRoster() {
+  if (!records.length) return;
+  const list = records.map(rec => ({ rec, priority: priorityOf(rec) }))
+    .sort((a, b) => a.priority - b.priority || a.rec.name.localeCompare(b.rec.name));
+  const counts = PRIORITY.map((_, p) => list.filter(x => x.priority === p).length);
+  $("rosterChips").innerHTML = chipsHtml([
+    { value: "ALL", label: "All", count: list.length },
+    ...PRIORITY.map((p, i) => ({ value: String(i), label: p.label, count: counts[i] })).filter(o => o.count),
+  ], view.rosterFilter);
+
+  let html = "", lastPriority = -1;
+  for (const { rec, priority } of list) {
+    if (view.rosterFilter !== "ALL" && String(priority) !== view.rosterFilter) continue;
+    if (priority !== lastPriority) {
+      html += `<div class="ro-sep" style="background:${PRIORITY[priority].color}">${PRIORITY[priority].label.toUpperCase()} (${counts[priority]})</div>`;
+      lastPriority = priority;
+    }
+    html += rosterRowHtml(rec, priority);
+  }
+  $("roster").innerHTML = html || `<div class="empty">Nobody here.</div>`;
+}
+
+$("rosterChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  view.rosterFilter = chip.dataset.f;
+  renderRoster();
+});
+$("roster").addEventListener("click", e => {
+  const row = e.target.closest(".ro");
+  const rec = row && recordsByRow.get(+row.dataset.idx);
+  if (rec) showResult(rec);
+});
+
+/* =====================================================================
+   19. SEND REMINDER TAB
+   ===================================================================== */
+function fillRemindSelects() {
+  const groups = cols.group >= 0 ? [...new Set(records.map(r => cellOf(r, cols.group)).filter(Boolean))] : [];
+  $("rmGroup").innerHTML = `<option value="ALL">All (${records.length})</option>` +
+    groups.map(g => `<option value="${esc(g)}">${esc(g)} (${records.filter(r => cellOf(r, cols.group) === g).length})</option>`).join("");
+  $("rmGroupWrap").hidden = !groups.length;
+}
+
+function renderTemplateEditor() {
+  const tab = view.tab;
+  $("rmTemplates").innerHTML = Object.keys(settings.tpl[tab]).map(k =>
+    `<h4>${esc(TPL_LABEL[k] || k)}</h4><textarea data-k="${esc(k)}" spellcheck="false">${esc(settings.tpl[tab][k])}</textarea>`).join("");
+  $("rmTemplates").dataset.tab = tab;
+}
+
+// Puts settings and view state into the controls (without disturbing the field being typed in).
+function syncRemindControls() {
+  const tab = view.tab;
+  $("subIppt").classList.toggle("active", tab === "ippt");
+  $("subShoot").classList.toggle("active", tab === "shoot");
+  document.querySelectorAll(".rm-ippt").forEach(e => e.hidden = tab !== "ippt");
+  document.querySelectorAll(".rm-shoot").forEach(e => e.hidden = tab !== "shoot");
+  for (const [k, id] of Object.entries(SETTING_INPUTS)) if (document.activeElement !== $(id)) $(id).value = settings[k];
+  $("rmOpenIn").value = settings.openIn;
+  $("rmGroup").value = view.group;
+  if ($("rmTemplates").dataset.tab !== tab) renderTemplateEditor();
+}
+
+// People in the chosen group, each with their status for this tab.
+const remindItems = tab => records
+  .filter(rec => view.group === "ALL" || cellOf(rec, cols.group) === view.group)
+  .map(rec => ({ rec, status: statusOf(rec, tab) }));
+
+function remindRowHtml({ rec, status }, tab) {
+  const tpl = settings.tpl[tab][status];
+  const at = sentAt(rec, tab);
+  let action = at ? `<span class="when">Sent ${esc(fmtWhen(at))}</span>` : "";
+  if (!tpl) action += `<span class="ph">${esc(STATUS_NOTE[status] || "")}</span>`;
+  else if (!hasValidHp(rec)) action += `<span class="ph warn">No valid HP</span>`;
+  else action += `<button class="btn small" data-preview>Preview</button>
+    <a class="btn small green send" href="${esc(chatLink(rec, tab))}" target="spf_wa">${at ? "Resend" : "Send"}</a>`;
+
+  const context = tab === "ippt"
+    ? [cols.lastFy >= 0 && `${settings.lastFy}: ${cellOf(rec, cols.lastFy) || "—"}`, cols.thisFy >= 0 && `${settings.thisFy}: ${cellOf(rec, cols.thisFy) || "—"}`]
+    : [`Shooting: ${cellOf(rec, cols.shoot) || "—"}`];
+  if (cols.group >= 0 && view.group === "ALL") context.push(cellOf(rec, cols.group));
+  const remark = cellOf(rec, cols.remarks);
+  return `<div class="rm-row${at ? " sent" : ""}" data-idx="${rec.idx}">
+    ${codeBadge(rec)}
+    <span class="nm">${esc(rec.name)}<span class="ctx">${esc(context.filter(Boolean).join(" · "))}${remark ? `<br>&#8220;${esc(remark)}&#8221;` : ""}</span></span>
+    <span class="ph">${esc(displayPhone(rec))}</span>
+    ${statusPill(status)}
+    ${action}
+  </div>`;
+}
+
+function renderRemind() {
+  const tab = view.tab;
+  syncRemindControls();
+  renderBatch();
+  if (!hasTabData(tab)) {
+    $("rmChips").innerHTML = ""; $("rmProgress").textContent = "";
+    $("rmList").innerHTML = `<div class="empty">No ${tab === "ippt" ? "IPPT track or FY result" : "shooting"} column found in the sheet. Pick it from the dropdown above.</div>`;
+    return;
+  }
+
+  const items = remindItems(tab);
+  const counts = {};
+  for (const i of items) counts[i.status] = (counts[i.status] || 0) + 1;
+  if (view.filter !== "ALL" && !counts[view.filter]) view.filter = "ALL";
+  $("rmChips").innerHTML = chipsHtml([
+    { value: "ALL", label: "ALL", count: items.length },
+    ...[...STATUS_ORDER[tab], "Unclear"].filter(s => counts[s]).map(s => ({ value: s, label: s, count: counts[s] })),
+  ], view.filter);
+
+  renderProgress(items, tab);
+  const shown = items.filter(i => view.filter === "ALL" || i.status === view.filter);
+  $("rmList").innerHTML = shown.length ? shown.map(i => remindRowHtml(i, tab)).join("") : `<div class="empty">Nobody here.</div>`;
+}
+
+function renderProgress(items, tab) {
+  const sendable = items.filter(i => canSend(i.rec, tab));
+  const sent = sendable.filter(i => sentAt(i.rec, tab)).length;
+  const noHp = items.filter(i => settings.tpl[tab][i.status] && !hasValidHp(i.rec)).length;
+  const unclear = items.filter(i => i.status === "Unclear").length;
+  $("rmProgress").innerHTML = `SENT <b>${sent}</b> / ${sendable.length}` +
+    (noHp ? ` &middot; <span class="warn">${noHp} without a valid HP</span>` : "") +
+    (unclear ? ` &middot; <span class="warn">${unclear} unclear</span>` : "");
+}
+
+// A send changes only that person's row, the SENT count and the batch panel. Redrawing just those
+// keeps a tap fast: a full list redraw + layout takes ~50 ms at 444 people, ~0.45 s at 3,000.
+function renderSentRow(rec) {
+  const tab = view.tab, row = $("rmList").querySelector(`.rm-row[data-idx="${rec.idx}"]`);
+  if (row) row.outerHTML = remindRowHtml({ rec, status: statusOf(rec, tab) }, tab);
+  renderProgress(remindItems(tab), tab);
+  renderBatch();
+}
+
+function renderRemindKeepScroll() {
+  const y = window.scrollY;
+  renderRemind();
+  window.scrollTo(0, y);
+}
+
+// Opening a chat link: record it after the browser has followed the link.
+function chatOpened(rec, tab) {
+  setTimeout(() => recordAction(rec, tab), 0);
+}
+
+$("subIppt").addEventListener("click", () => { view.tab = "ippt"; view.filter = "ALL"; renderRemind(); });
+$("subShoot").addEventListener("click", () => { view.tab = "shoot"; view.filter = "ALL"; renderRemind(); });
+$("rmGroup").addEventListener("change", e => { view.group = e.target.value; batch.queue = []; renderRemind(); });
+$("rmOpenIn").addEventListener("change", e => { settings.openIn = e.target.value; saveSettings(); renderRemind(); });
+for (const [k, id] of Object.entries(SETTING_INPUTS))
+  $(id).addEventListener("input", e => { settings[k] = e.target.value; settingsChanged(); });
+$("rmTemplates").addEventListener("input", e => {
+  const k = e.target.dataset.k;
+  if (!k) return;
+  settings.tpl[view.tab][k] = e.target.value;
+  settingsChanged();
+});
+$("rmResetTpl").addEventListener("click", () => {
+  settings.tpl[view.tab] = { ...DEF_TPL[view.tab] };
+  renderTemplateEditor();
+  settingsChanged();
+  toast("Wording reset");
+});
+$("rmChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  view.filter = chip.dataset.f;
+  renderRemind();
+});
+$("rmList").addEventListener("click", e => {
+  const row = e.target.closest(".rm-row");
+  const rec = row && recordsByRow.get(+row.dataset.idx);
+  if (!rec) return;
+  const link = e.target.closest("a.send");
+  if (link) {
+    link.href = chatLink(rec, view.tab);   // latest wording, even before the list redraws
+    if (batchActive() && batch.queue[batch.pos] === rec) advanceBatch();    // sent from the list: don't offer them again
+    chatOpened(rec, view.tab);
+    return;
+  }
+  if (!e.target.closest("[data-preview]")) return;
+  const open = row.querySelector(".rm-prev");
+  if (open) { open.remove(); return; }
+  const preview = document.createElement("div");
+  preview.className = "rm-prev";
+  preview.textContent = fillTemplate(templateFor(rec, view.tab), rec);
+  row.appendChild(preview);
+});
+
+/* ---------- batch send: one tap per person, capped, with a cool-down ---------- */
+const cooldownLeftMs = () => batch.endedAt ? COOLDOWN_MIN * 60000 - (Date.now() - batch.endedAt) : 0;
+const batchActive = () => batch.queue.length > 0 && batch.tab === view.tab;
+
+function startBatch() {
+  const tab = view.tab;
+  const size = Math.max(1, Math.min(BATCH_MAX, parseInt($("bSize").value, 10) || BATCH_MAX));
+  $("bSize").value = size;
+  if (cooldownLeftMs() > 0) {
+    const ago = Math.round((Date.now() - batch.endedAt) / 60000);
+    if (!confirm(`Your last batch ended ${ago} min ago. Waiting about ${COOLDOWN_MIN} min between batches lowers the chance of WhatsApp flagging your number. Start anyway?`)) return;
+  }
+  if (!settings.me.trim() && !confirm("Your name is empty, so messages will go out without \"this is ...\". Start anyway? (Cancel, then fill in Your name under Message settings.)")) return;
+  const queue = remindItems(tab)
+    .filter(i => (view.filter === "ALL" || i.status === view.filter) && stillToSend(i.rec, tab))
+    .slice(0, size).map(i => i.rec);
+  if (!queue.length) { toast("Nobody left to send in this view"); return; }
+  Object.assign(batch, { queue, pos: 0, tab });
+  renderBatch();
+  $("batchPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// Has a message and has not been sent yet. Re-checked while a batch runs: someone in the queue
+// may have been sent from the list (or edited) since the batch started.
+const stillToSend = (rec, tab = batch.tab) => canSend(rec, tab) && !sentAt(rec, tab);
+
+// Moves to the next person still to send; ends the batch (and starts the cool-down) after the last.
+function advanceBatch() {
+  do batch.pos++; while (batch.pos < batch.queue.length && !stillToSend(batch.queue[batch.pos]));
+  if (batch.pos >= batch.queue.length) endBatch();
+}
+function endBatch() {
+  if (batch.pos > 0) batch.endedAt = Date.now();
+  batch.queue = [];
+}
+
+function renderBatch() {
+  const panel = $("batchPanel");
+  $("bStart").disabled = batchActive();
+  if (!batchActive()) {
+    const left = cooldownLeftMs();
+    panel.hidden = left <= 0;
+    if (left > 0) panel.innerHTML = `<div class="bp-done">&#10003; Batch done. Take a break of about <b>${Math.ceil(left / 60000)} min</b> before the next batch.</div>`;
+    return;
+  }
+  const rec = batch.queue[batch.pos];
+  panel.hidden = false;
+  panel.innerHTML = `<div class="bp-head">BATCH &middot; ${batch.pos + 1} / ${batch.queue.length}</div>
+    <div class="bp-meter"><i style="width:${(batch.pos / batch.queue.length) * 100}%"></i></div>
+    <div class="bp-next">Next: <b>${esc(rec.name)}</b> <span class="ph">${esc(displayPhone(rec))}</span></div>
+    <div class="bp-actions">
+      <a class="btn big green" id="bNext" href="${esc(chatLink(rec, batch.tab))}" target="spf_wa">&#9654; Open chat ${batch.pos + 1}</a>
+      <button class="btn small" id="bSkip">Skip</button>
+      <button class="btn small" id="bStop">Stop batch</button>
+    </div>
+    <div class="hint">Press send in WhatsApp, then come back and tap the next one.</div>`;
+}
+
+$("bStart").addEventListener("click", startBatch);
+$("batchPanel").addEventListener("click", e => {
+  const next = e.target.closest("#bNext");
+  if (next) {
+    const rec = batch.queue[batch.pos], tab = batch.tab;
+    next.href = chatLink(rec, tab);      // latest wording
+    advanceBatch();
+    chatOpened(rec, tab);
+  } else if (e.target.closest("#bSkip")) { advanceBatch(); renderBatch(); }
+  else if (e.target.closest("#bStop")) { endBatch(); renderBatch(); }
+});
+
+/* =====================================================================
+   20. WIRING: file loading, saving, tabs, leave warning
+   ===================================================================== */
+$("pick").addEventListener("click", () => $("file").click());
+$("gatePick").addEventListener("click", () => $("file").click());
+$("gateDemo").addEventListener("click", () => openSheets(DEMO_SHEETS, "sample data", {}, true));
+$("file").addEventListener("change", e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+  e.target.value = "";
+});
+["dragenter", "dragover"].forEach(ev => window.addEventListener(ev, e => { e.preventDefault(); document.body.classList.add("dragging"); }));
+["dragleave", "drop"].forEach(ev => window.addEventListener(ev, e => { e.preventDefault(); document.body.classList.remove("dragging"); }));
+window.addEventListener("drop", e => {
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  handleFile(f);
+});
+
+// Ctrl+Z (Cmd+Z on Mac) undoes the last field edit; while typing in a box the browser undoes the typing instead.
+document.addEventListener("keydown", e => {
+  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== "z") return;
+  if (e.target.closest("input, textarea, select") || $("tabFind").hidden || !$("gate").hidden || !$("conflict").hidden) return;
+  e.preventDefault();
+  undoLastEdit();
+});
+
+$("saveBtn").addEventListener("click", downloadExcel);
+$("dlBtn").addEventListener("click", downloadExcel);
+$("tabBtnFind").addEventListener("click", () => showTab("find"));
+$("tabBtnRemind").addEventListener("click", () => showTab("remind"));
+window.addEventListener("beforeunload", e => {
+  if (unsavedCount()) { e.preventDefault(); e.returnValue = ""; }
+});
+
+/* =====================================================================
+   21. BOOT
+   ===================================================================== */
+applySettings(store.load(STORE.settings, null));
+openGate();
+updateSaveBar();
+})();
+</script>
+</body>
+</html>
