@@ -347,7 +347,7 @@
               <button class="clear" data-clear="qName" title="Clear">X</button>
             </div>
             <div class="suggest" id="sugName"></div>
-            <div class="hint">Approximate matches are flagged <span class="tag">~ CLOSE</span></div>
+            <div class="hint"><span class="tag">~ CLOSE</span> = near match</div>
           </div>
           <div class="search-box">
             <label><span class="key" style="background:var(--ewl)">B</span> Search by HP number</label>
@@ -356,7 +356,7 @@
               <button class="clear" data-clear="qPhone" title="Clear">X</button>
             </div>
             <div class="suggest" id="sugPhone"></div>
-            <div class="hint">Full or partial number. +65 / spaces are ignored.</div>
+            <div class="hint">Full or partial number.</div>
           </div>
         </div>
       </div>
@@ -372,7 +372,7 @@
           <button class="btn small" id="openWa">Open WhatsApp</button>
         </div>
       </div>
-      <div class="hint ticket-hint">Click any field to edit it. Changes are saved into the Excel when you download (or auto-save).</div>
+      <div class="hint ticket-hint">Click a field to edit.</div>
       <div class="fields" id="fields"></div>
     </section>
 
@@ -381,7 +381,7 @@
       <div class="panel-body">
         <div class="toolbar" style="margin-top:0">
           <div class="chips" id="rosterChips"></div>
-          <div class="toolbar-note">Most outstanding at the top. Click a name to open it.</div>
+          <div class="toolbar-note">Most outstanding first.</div>
         </div>
         <div class="roster" id="roster"></div>
       </div>
@@ -399,7 +399,7 @@
         </div>
 
         <div class="rm-settings">
-          <label class="rm-f">Your name / rank (signs the message)
+          <label class="rm-f">Your name / rank
             <input id="rmMe" type="text" placeholder="e.g. LTC Tan" autocomplete="off"></label>
           <label class="rm-f rm-ippt">Last FY
             <input id="rmLastFy" type="text" size="6" autocomplete="off"></label>
@@ -429,11 +429,11 @@
         <div class="batch-ctl">
           <button class="btn" id="bStart">&#9654; Start batch</button>
           <label>of <input id="bSize" type="number" min="1" max="20" value="20"> people (max 20)</label>
-          <span class="hint">Goes through the people shown above who haven't been sent yet, one tap each.</span>
+          <span class="hint">Unsent people in this list, one tap each.</span>
         </div>
         <div class="batch-panel" id="batchPanel" hidden></div>
         <div id="rmList"></div>
-        <div class="hint">Tap SEND to open WhatsApp with the message filled in. You still press send inside WhatsApp. Each tap is recorded with the date and time.</div>
+        <div class="hint">SEND opens WhatsApp with the message filled in. You press send there.</div>
       </div>
     </section>
   </div>
@@ -456,21 +456,20 @@
     <div class="modal-body">
       <div class="roundel">SPF</div>
       <h2>Tap in to start</h2>
-      <p>Load your Excel list to begin.</p>
-      <div class="dropzone">
+            <div class="dropzone">
         <div class="dz-big desk">&#8681; Drag your Excel file here</div>
         <div class="desk dz-or">or</div>
         <button class="btn big" id="gatePick">Choose Excel file</button>
-        <div class="dz-sub">.xlsx or .csv &middot; the file stays on this device</div>
+        <div class="dz-sub">.xlsx or .csv</div>
       </div>
       <div id="gateErr"></div>
       <ol class="howto">
         <li><b>Load</b> your Excel list.</li>
-        <li><b>Find</b> an officer, or open <b>Send Reminder</b> and tap Send. You press send in WhatsApp.</li>
-        <li><b>Download</b> when done. The red bar at the bottom shows when you have unsaved updates.</li>
+        <li><b>Find</b> officers or <b>send</b> WhatsApp reminders.</li>
+        <li><b>Download</b> the updated Excel.</li>
       </ol>
-      <p class="howto-note">Your list never leaves this device. Nothing is uploaded.</p>
-      <button class="linkbtn" id="gateDemo">No file yet? Try with sample data</button>
+      <p class="howto-note">Your list stays on this device. Nothing is uploaded.</p>
+      <button class="linkbtn" id="gateDemo">Try with sample data</button>
     </div>
   </div>
 </div>
@@ -480,9 +479,9 @@
   <div class="modal">
     <div class="panel-title" style="background:var(--nsl)"><span class="dot"></span>&#9888; This file may be outdated</div>
     <div class="modal-body left">
-      <p>On this device, <b id="cfCount"></b> update(s) were made, the latest on <b id="cfDate"></b>, that are <u>not</u> in this file.</p>
+      <p><b id="cfCount"></b> update(s) on this device are <u>not</u> in this file (latest: <b id="cfDate"></b>).</p>
       <ul id="cfList"></ul>
-      <p class="hint">You may have opened an older copy. The newest one is usually the file ending in <b>_updated_...</b> in your Downloads.</p>
+      <p class="hint">This may be an older copy. The newest is usually the file ending in <b>_updated_...</b> in Downloads.</p>
       <div class="cf-actions">
         <button class="btn green" id="cfKeep">Keep my edits (recommended)</button>
         <button class="btn small" id="cfOverride">Use this file as-is</button>
@@ -509,10 +508,10 @@ const TABS = ["ippt", "shoot"];
 const TAB_LABEL = { ippt: "IPPT", shoot: "Shooting" };
 const LOG_COLS = { ippt: "IPPT reminder sent", shoot: "Shooting reminder sent" };   // added to the exported Excel
 const META_SHEET = "_SPF";                                                          // hidden sheet: save time + settings
-const STORE = { actions: "spf.actions.v1", edits: "spf.edits.v1", settings: "spf.remind.v1" };
+const STORE = { actions: "spf.actions.v1", edits: "spf.edits.v1", settings: "spf.remind.v1", batchEnded: "spf.batch.v1" };
 const HP_LENGTH = 8, COUNTRY_CODE = "65";            // Singapore mobile numbers
 const NO_COL = -1, AUTO_TRACK = -2;       // column choices: none / work out IPPT track from FY results
-const BATCH_MAX = 20, COOLDOWN_MIN = 15;
+const BATCH_MAX = 20, COOLDOWN_HOURS = 24;       // wait 1-2 days between batches so WhatsApp doesn't flag the number as spam
 const EXCEL_EPOCH = 25569, DAY_MS = 86400000;
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -717,7 +716,7 @@ const settingsEdited = () => settingsVersion !== savedSettingsVersion;
 // View state
 const view = { tab: "ippt", filter: "ALL", group: "ALL", rosterFilter: "ALL" };
 let selected = null;       // record shown in the ticket
-const batch = { queue: [], pos: 0, tab: "", endedAt: 0 };
+const batch = { queue: [], pos: 0, tab: "", endedAt: store.load(STORE.batchEnded, 0) };   // endedAt kept on the device: the wait outlasts closing the page
 let saveHandle = null, autoSaveTimer = 0;
 
 /* =====================================================================
@@ -1200,8 +1199,8 @@ function loadData(sheetList, label, meta, isDemo) {
   applyFileSettings();
   resetViews();
   $("status").innerHTML = isDemo
-    ? `<span class="warn">SAMPLE DATA</span> &mdash; ${records.length} made-up records. Load your real sheet to start.`
-    : `<span class="ok">LOADED</span> ${esc(label)} &mdash; ${records.length} records` +
+    ? `<span class="warn">SAMPLE DATA</span> &middot; ${records.length} made-up records`
+    : `<span class="ok">LOADED</span> ${esc(label)} &middot; ${records.length} records` +
       (fileMeta.savedAt ? ` &middot; last saved by this app ${esc(fmtWhen(Date.parse(fileMeta.savedAt)))}` : "") +
       missingColumns().map(m => `<br><span class="warn">Check: ${esc(m)}</span>`).join("");
 }
@@ -1359,8 +1358,8 @@ async function reconcile() {
   if (!total) { keepMine(); return; }
 
   const lines = [
-    ...edited.map(e => `<li>${esc(e.rec.name)} &mdash; ${esc(headers[e.col])} changed to &ldquo;${esc(e.v)}&rdquo;, ${esc(fmtWhen(e.ts))}</li>`),
-    ...unsent.map(u => `<li>${esc(u.rec.name)} &mdash; ${TAB_LABEL[u.tab]} reminder sent, ${esc(fmtWhen(u.ts))}</li>`),
+    ...edited.map(e => `<li>${esc(e.rec.name)}: ${esc(headers[e.col])} changed to &ldquo;${esc(e.v)}&rdquo;, ${esc(fmtWhen(e.ts))}</li>`),
+    ...unsent.map(u => `<li>${esc(u.rec.name)}: ${TAB_LABEL[u.tab]} reminder sent, ${esc(fmtWhen(u.ts))}</li>`),
   ];
   $("cfCount").textContent = total;
   $("cfDate").textContent = fmtWhen(Math.max(...unsent.map(u => u.ts), ...edited.map(e => e.ts)));
@@ -1756,7 +1755,7 @@ function fieldHtml(rec, col) {
   const kind = col === cols.name ? " primary" : col === cols.phone ? " phone" : "";
   return `<div class="field${kind}${editable ? " editable" : ""}${edited ? " edited" : ""}" data-col="${col}">
     <div class="k">${esc(headers[col])}${edited ? '<span class="ed-tag">EDITED</span>' : ""}${editable ? '<span class="pen">&#9998;</span>' : ""}</div>
-    <div class="v${shown ? "" : " empty"}">${shown ? esc(shown) : "&mdash;"}</div></div>`;
+    <div class="v${shown ? "" : " empty"}">${shown ? esc(shown) : "-"}</div></div>`;
 }
 
 // quiet = redraw in place without the pop-in animation and scroll
@@ -1822,7 +1821,7 @@ $("openWa").addEventListener("click", () => {
 function statBox(title, color, cleared, total, note) {
   const pct = total ? Math.round((cleared / total) * 100) : 0;
   return `<div class="stat"><div class="k" style="background:${color}">${title}</div>
-    <div class="v">${total ? `${cleared}<small> / ${total}</small>` : "&mdash;"}</div>
+    <div class="v">${total ? `${cleared}<small> / ${total}</small>` : "-"}</div>
     <div class="bar"><i style="width:${pct}%;background:${color}"></i></div>
     <div class="sub">${note}</div></div>`;
 }
@@ -1929,8 +1928,8 @@ function remindRowHtml({ rec, status }, tab) {
     <a class="btn small green send" href="${esc(chatLink(rec, tab))}" target="spf_wa">${at ? "Resend" : "Send"}</a>`;
 
   const context = tab === "ippt"
-    ? [cols.lastFy >= 0 && `${settings.lastFy}: ${cellOf(rec, cols.lastFy) || "—"}`, cols.thisFy >= 0 && `${settings.thisFy}: ${cellOf(rec, cols.thisFy) || "—"}`]
-    : [`Shooting: ${cellOf(rec, cols.shoot) || "—"}`];
+    ? [cols.lastFy >= 0 && `${settings.lastFy}: ${cellOf(rec, cols.lastFy) || "-"}`, cols.thisFy >= 0 && `${settings.thisFy}: ${cellOf(rec, cols.thisFy) || "-"}`]
+    : [`Shooting: ${cellOf(rec, cols.shoot) || "-"}`];
   if (cols.group >= 0 && view.group === "ALL") context.push(cellOf(rec, cols.group));
   const remark = cellOf(rec, cols.remarks);
   return `<div class="rm-row${at ? " sent" : ""}" data-idx="${rec.idx}">
@@ -1948,7 +1947,7 @@ function renderRemind() {
   renderBatch();
   if (!hasTabData(tab)) {
     $("rmChips").innerHTML = ""; $("rmProgress").textContent = "";
-    $("rmList").innerHTML = `<div class="empty">No ${tab === "ippt" ? "IPPT track or FY result" : "shooting"} column found in the sheet. Pick it from the dropdown above.</div>`;
+    $("rmList").innerHTML = `<div class="empty">No ${tab === "ippt" ? "IPPT track or FY result" : "shooting"} column found in the sheet.</div>`;
     return;
   }
 
@@ -2041,7 +2040,7 @@ $("rmList").addEventListener("click", e => {
 });
 
 /* ---------- batch send: one tap per person, capped, with a cool-down ---------- */
-const cooldownLeftMs = () => batch.endedAt ? COOLDOWN_MIN * 60000 - (Date.now() - batch.endedAt) : 0;
+const cooldownLeftMs = () => batch.endedAt ? COOLDOWN_HOURS * 3600000 - (Date.now() - batch.endedAt) : 0;
 const batchActive = () => batch.queue.length > 0 && batch.tab === view.tab;
 
 function startBatch() {
@@ -2049,10 +2048,9 @@ function startBatch() {
   const size = Math.max(1, Math.min(BATCH_MAX, parseInt($("bSize").value, 10) || BATCH_MAX));
   $("bSize").value = size;
   if (cooldownLeftMs() > 0) {
-    const ago = Math.round((Date.now() - batch.endedAt) / 60000);
-    if (!confirm(`Your last batch ended ${ago} min ago. Waiting about ${COOLDOWN_MIN} min between batches lowers the chance of WhatsApp flagging your number. Start anyway?`)) return;
+    if (!confirm(`Your last batch ended ${fmtWhen(batch.endedAt)}. Wait 1-2 days between batches so WhatsApp doesn't flag your number. Start anyway?`)) return;
   }
-  if (!settings.me.trim() && !confirm("Your name is empty, so messages will go out without \"this is ...\". Start anyway? (Cancel, then fill in Your name under Message settings.)")) return;
+  if (!settings.me.trim() && !confirm("Your name is blank, so messages won't say who they're from. Start anyway?")) return;
   const queue = remindItems(tab)
     .filter(i => (view.filter === "ALL" || i.status === view.filter) && stillToSend(i.rec, tab))
     .slice(0, size).map(i => i.rec);
@@ -2072,7 +2070,10 @@ function advanceBatch() {
   if (batch.pos >= batch.queue.length) endBatch();
 }
 function endBatch() {
-  if (batch.pos > 0) batch.endedAt = Date.now();
+  if (batch.pos > 0) {
+    batch.endedAt = Date.now();
+    if (!demoMode) store.save(STORE.batchEnded, batch.endedAt);   // sample data is never stored
+  }
   batch.queue = [];
 }
 
@@ -2082,7 +2083,7 @@ function renderBatch() {
   if (!batchActive()) {
     const left = cooldownLeftMs();
     panel.hidden = left <= 0;
-    if (left > 0) panel.innerHTML = `<div class="bp-done">&#10003; Batch done. Take a break of about <b>${Math.ceil(left / 60000)} min</b> before the next batch.</div>`;
+    if (left > 0) panel.innerHTML = `<div class="bp-done">&#10003; Batch done. Next batch after <b>${esc(fmtWhen(batch.endedAt + COOLDOWN_HOURS * 3600000))}</b> to avoid WhatsApp spam flags.</div>`;
     return;
   }
   const rec = batch.queue[batch.pos];
@@ -2095,7 +2096,7 @@ function renderBatch() {
       <button class="btn small" id="bSkip">Skip</button>
       <button class="btn small" id="bStop">Stop batch</button>
     </div>
-    <div class="hint">Press send in WhatsApp, then come back and tap the next one.</div>`;
+    <div class="hint">Send in WhatsApp, then tap the next one.</div>`;
 }
 
 $("bStart").addEventListener("click", startBatch);
