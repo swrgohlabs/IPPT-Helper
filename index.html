@@ -196,6 +196,9 @@
   .ro { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 2px solid #e2ddd0; cursor: pointer; flex-wrap: wrap; }
   .ro:hover { background: var(--hover); }
   .ro .nm { flex: 1; min-width: 160px; }
+  /* long lists: rows off screen skip layout until scrolled to (~2,400 rows: tab switch ~0.25 s -> see CLAUDE.md) */
+  .ro, .rm-row { content-visibility: auto; contain-intrinsic-size: auto 44px; }
+  .rm-row { contain-intrinsic-size: auto 64px; }
   .ro.p0 { border-left: 8px solid var(--nsl); }
   .ro.p1 { border-left: 8px solid var(--ccl); }
   .ro.p2 { border-left: 8px solid var(--ewl); }
@@ -407,6 +410,8 @@
             <input id="rmThisFy" type="text" size="6" autocomplete="off"></label>
           <label class="rm-f rm-ippt">Deadline
             <input id="rmDeadline" type="text" size="10" autocomplete="off"></label>
+          <label class="rm-f rm-ippt">Medical review link
+            <input id="rmMedLink" type="url" size="24" placeholder="paste link" autocomplete="off"></label>
           <label class="rm-f" id="rmGroupWrap">Group <select id="rmGroup"></select></label>
           <label class="rm-f">Open chats in
             <select id="rmOpenIn">
@@ -417,7 +422,7 @@
 
         <details class="rm-edit">
           <summary>Edit message wording</summary>
-          <div class="hint">Placeholders: <b>{name}</b> <b>{me}</b> <b>{lastFY}</b> <b>{thisFY}</b> <b>{deadline}</b>. WhatsApp bold = *text*.</div>
+          <div class="hint">Placeholders: <b>{name}</b> <b>{me}</b> <b>{lastFY}</b> <b>{thisFY}</b> <b>{deadline}</b> <b>{result}</b> <b>{nsfit}</b> <b>{medLink}</b>. A line whose placeholder is empty is left out. WhatsApp bold = *text*.</div>
           <div id="rmTemplates"></div>
           <button class="btn small" id="rmResetTpl">Reset to default wording</button>
         </details>
@@ -511,39 +516,78 @@ const META_SHEET = "_SPF";                                                      
 const STORE = { actions: "spf.actions.v1", edits: "spf.edits.v1", settings: "spf.remind.v1", batchEnded: "spf.batch.v1" };
 const HP_LENGTH = 8, COUNTRY_CODE = "65";            // Singapore mobile numbers
 const NO_COL = -1, AUTO_TRACK = -2;       // column choices: none / work out IPPT track from FY results
+const NSFIT_SESSIONS = 9;                  // failing IPPT after this many NSFIT sessions meets the requirement
 const BATCH_MAX = 20, COOLDOWN_HOURS = 24;       // wait 1-2 days between batches so WhatsApp doesn't flag the number as spam
 const EXCEL_EPOCH = 25569, DAY_MS = 86400000;
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+// Message wording. A line with a placeholder that is empty for that person (no NSFIT count, no link set) is left out.
+const GOOD_TO_KNOW =
+`*Good to know*
+- *$100 NSEA incentive (TransCom initiative):* improve your IPPT result vs last FY and complete your ICT.
+- *Off-in-lieu:* pass IPPT before your ICT and you get off-in-lieu during your ICT.
+- *Medical review / exemption:* submit here {medLink}
+- Defaulters may face disciplinary action or penalties. We want to help you avoid this.`;
 const DEF_TPL = {
   ippt: {
     NSFIT:
 `Hi {name}, this is {me}.
 
-I understand from my list that you failed or did not take your IPPT last FY ({lastFY}). Can I check with you:
+My list shows you are on mandatory NSFIT this FY ({thisFY}), as you did not pass IPPT last FY ({lastFY}).
+NSFIT sessions attended so far: {nsfit}
 
+Can I check with you:
 1. How many NSFIT sessions do you have left?
-2. When are you planning to take your NSFIT IPPT this FY? ({deadline} at the latest)
-3. Could you send me a screenshot of your IPPT booking?
+2. When are you planning to take your NSFIT IPPT? ({deadline} at the latest)
+3. Could you send me a screenshot of your booking?
 
-*Reminder:* if you failed IPPT last year, you need to go on NSFIT this year (or pass). NSFIT is 9 NSFIT sessions + 1 IPPT attempt.
+NSFIT is 9 NSFIT sessions + 1 IPPT attempt. Please start ASAP as slots are tight, ideally before CNY. Around {deadline} it is very hard to get NSFIT and IPPT slots. If there are no NSFIT slots (you can only book 3 at a time), you can try Buddy Fit.
 
-Please start ASAP as slots are tight, ideally before CNY. We really want to help you avoid a Provost investigation. Around {deadline}, it is very difficult to get NSFIT and IPPT slots.
+${GOOD_TO_KNOW}
 
-If there are no NSFIT slots available (you can only book 3 at a time), you can try Buddy Fit.
+Please reply as soon as possible. Thank you!`,
+    "Finish NSFIT":
+`Hi {name}, this is {me}.
+
+My list shows your IPPT result for {thisFY} as: {result}, and you are on mandatory NSFIT.
+NSFIT sessions attended so far: {nsfit}
+
+Can I check which you are planning to do:
+1. Finish your NSFIT (9 NSFIT sessions + 1 IPPT attempt), or
+2. Pass your IPPT?
+
+When are you planning to do it? ({deadline} at the latest) Could you send me a screenshot of your booking?
+
+${GOOD_TO_KNOW}
+
+Please reply as soon as possible. Thank you!`,
+    Retake:
+`Hi {name}, this is {me}.
+
+My list shows your IPPT result for {thisFY} as: {result}.
+NSFIT sessions attended so far: {nsfit}
+
+Can I check with you:
+1. When are you planning your next IPPT attempt? ({deadline} at the latest)
+2. Could you send me a screenshot of your booking?
+3. If you are on NSFIT, how many sessions do you have left?
+
+If my list is wrong, please send me your latest result.
+
+${GOOD_TO_KNOW}
 
 Please reply as soon as possible. Thank you!`,
     Normal:
 `Hi {name}, this is {me}.
 
 Can I check with you on your IPPT for {thisFY}:
-
 1. Have you taken your IPPT this FY?
-2. If yes, what date did you take it?
-3. If not, when do you plan to take it?
-4. What was the result? (Please let me know even if it was a fail.)
+2. If yes, what date, and what was the result? (Please tell me even if it was a fail.)
+3. If not, when do you plan to take it? ({deadline} at the latest)
 
-If you are doing NSFIT, please let me know when you are planning your NSFIT IPPT.
+If you are doing NSFIT, please let me know when your NSFIT IPPT is.
+
+${GOOD_TO_KNOW}
 
 Please reply as soon as possible. Thank you!`,
   },
@@ -561,19 +605,21 @@ Please book early as slots can be tight.
 Please reply as soon as possible. Thank you!`,
   },
 };
-const TPL_LABEL = { NSFIT: "NSFIT track", Normal: "Normal track", "Not attempted": "Shooting not attempted" };
+const TPL_LABEL = { NSFIT: "NSFIT track", "Finish NSFIT": "Mandatory NSFIT, not passed this FY", Retake: "Not passed this FY", Normal: "Normal track", "Not attempted": "Shooting not attempted" };
+// Fingerprints (fnv) of earlier default wording. A stored copy of one of these is replaced by today's default.
+const OLD_DEFAULT_TPL = new Set(["kens1e", "195hpiw"]);
 
 // Statuses per reminder tab. A status with a template gets a message; the rest are notes.
-const STATUS_ORDER = { ippt: ["NSFIT", "Normal", "Done", "Not eligible"], shoot: ["Not attempted", "Pass", "Fail"] };
+const STATUS_ORDER = { ippt: ["NSFIT", "Finish NSFIT", "Retake", "Normal", "Done", "NSFIT done", "Not eligible"], shoot: ["Not attempted", "Pass", "Fail"] };
 const STATUS_COLOR = {
-  NSFIT: "#d42e12", Normal: "#005ec4", Done: "#009645", "Not eligible": "#6b6b80",
+  NSFIT: "#d42e12", "Finish NSFIT": "#fa9e0d", Retake: "#9900aa", "NSFIT done": "#009645", Normal: "#005ec4", Done: "#009645", "Not eligible": "#6b6b80",
   "Not attempted": "#fa9e0d", Pass: "#009645", Fail: "#9d5b25", Unclear: "#6b6b80",
 };
 const STATUS_NOTE = {
-  Done: "Passed this FY, no reminder", "Not eligible": "Not eligible, no reminder",
+  Done: "Passed this FY, no reminder", "NSFIT done": "Failed after 9+ NSFIT sessions, no reminder", "Not eligible": "Not eligible, no reminder",
   Pass: "Attempted, no action", Fail: "Attempted, no action", Unclear: "Check sheet value",
 };
-const IPPT_CLEARED = ["Done", "Not eligible"];
+const IPPT_CLEARED = ["Done", "NSFIT done", "Not eligible"];
 const SHOOT_CLEARED = ["Pass", "Fail"];
 
 // Full list groups, most outstanding first.
@@ -583,25 +629,24 @@ const PRIORITY = [
   { label: "All clear", color: "var(--ewl)" },
 ];
 
-const DEMO_HEADER = ["S/N", "Full Name", "Rank", "Contact No.", "Ippt Eligibility", "FY 24 IPPT Results", "FY 25 IPPT Date", "FY 25 IPPT Result", "Shooting", "Remarks"];
-const DEMO_SHEETS = [
-  { name: "WL X", rows: [DEMO_HEADER,
-    ["1", "TAN WEI MING", "Sergeant 1 (NS)", "91234567", "YES", "FAIL", "", "", "Fail", "3 NSFIT left"],
-    ["2", "LIM JIA HUI", "Corporal (NS)", "82345678", "YES", "PASS", "", "", "Pass", ""],
-    ["3", "MUHAMMAD FARIS BIN ISMAIL", "Sergeant 2 (NS)", "93456789", "YES", "FAIL", "18/5/2025", "FAIL", "", "Booking IPPT for Dec"],
-    ["4", "RAJENDRAN S/O KUMAR", "Sergeant 3 (NS)", "84567890", "YES", "", "", "", "Pass", ""],
-    ["5", "NG SIEW LAN", "Corporal (NS)", "95678901", "YES", "SILVER", "2/9/2025", "PASS", "Fail", ""],
-    ["6", "CHUA BOON KENG", "Sergeant 1 (NS)", "86789012", "NO", "PWI", "", "", "Pass", "Medical review"],
-  ] },
-  { name: "WL Y", rows: [DEMO_HEADER,
-    ["7", "SITI NURHALIZA BINTE AHMAD", "Sergeant 2 (NS)", "97890123", "YES", "FAIL", "", "", "", "Call no answer"],
-    ["8", "WONG KAH SENG", "Corporal (NS)", "88901234", "YES", "PASS", "", "", "Pass", ""],
-    ["9", "ONG PEI SHAN", "Inspector (NS)", "99012345", "YES", "GOLD", "", "", "", ""],
-    ["10", "GURPREET SINGH", "Sergeant 1 (NS)", "81123456", "YES", "ABSENT", "", "", "Fail", "NSFIT 6/9"],
-    ["11", "TEO CHEE HONG", "Sergeant 3 (NS)", "9223456", "YES", "FAIL", "", "", "Pass", "Number not in use"],
-    ["12", "LEE XIN YI", "Corporal (NS)", "83345678", "YES", "PASS", "", "", "", ""],
-  ] },
-];
+// Made-up people in the same layout as the real FY26 list (one sheet, codes as in "IPPT Rs").
+const MFIT = "9002 - RT/MANDATORY", VFIT = "9001 - IPT/NS FIT";
+const TEAM_A = "NSMEN TEAM A, OUTRAM BASE", TEAM_B = "NSMEN TEAM B, WOODLANDS BASE", TEAM_C = "NSMEN TEAM C, PAYA LEBAR BASE";
+const DEMO_SHEETS = [{ name: "Sheet1", rows: [
+  ["Pers.No.", "Full Name", "Rank", "Organizational Unit", "PES", "FY26 Planned ICT", "IPPT Rs", "IPPT Date", "NSFIT Attended", "VFIT/MFIT", "Phone"],
+  ["10000001", "TAN WEI MING", "SERGEANT 1 (NS)", TEAM_A, "B1", "PLAN FOR DEC ICT 2", "", "", "3", MFIT, "91234567"],
+  ["10000002", "LIM JIA HUI", "CORPORAL (NS)", TEAM_A, "A", "Aug ICT 3", "PS", "14/8/2026", "", "", "82345678"],
+  ["10000003", "MUHAMMAD FARIS BIN ISMAIL", "SERGEANT 2 (NS)", TEAM_A, "B1", "PLAN FOR NOV ICT 1", "FL", "18/5/2026", "0", VFIT, "65-93456789"],
+  ["10000004", "RAJENDRAN S/O KUMAR", "SERGEANT 3 (NS)", TEAM_A, "A", "PLAN FOR JAN ICT 1", "", "", "", "", "84567890"],
+  ["10000005", "NG SIEW LAN", "CORPORAL (NS)", TEAM_A, "B2", "May ICT 2", "SV", "2/6/2026", "", "", "95678901"],
+  ["10000006", "CHUA BOON KENG", "SERGEANT 1 (NS)", TEAM_B, "B1", "PLAN FOR OCT ICT 4", "AB", "9/9/2026", "7", MFIT, "86789012"],
+  ["10000007", "SITI NURHALIZA BINTE AHMAD", "SERGEANT 2 (NS)", TEAM_B, "B1", "PLAN FOR DEC ICT 4", "", "", "0", MFIT, "97890123"],
+  ["10000008", "WONG KAH SENG", "CORPORAL (NS)", TEAM_B, "A", "July ICT 4", "PI", "3/7/2026", "", "", "88901234"],
+  ["10000009", "ONG PEI SHAN", "INSPECTOR (NS)", TEAM_B, "A", "0", "GD", "21/4/2026", "", "", "99012345"],
+  ["10000010", "GURPREET SINGH", "SERGEANT 1 (NS)", TEAM_C, "B1", "PLAN FOR NOV ICT 3", "FL", "12/8/2026", "12", MFIT, "81123456"],
+  ["10000011", "TEO CHEE HONG", "SERGEANT 3 (NS)", TEAM_C, "B", "Sep ICT 1", "", "", "1", VFIT, "9223456"],
+  ["10000012", "LEE XIN YI", "CORPORAL (NS)", TEAM_C, "A", "PLAN FOR FEB ICT 3", "", "", "", "", "83345678"],
+]}];
 
 /* =====================================================================
    2. SMALL UTILITIES
@@ -610,6 +655,12 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const pad = n => String(n).padStart(2, "0");
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+// FNV-1a: short, stable text fingerprint
+function fnv(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36);
+}
 
 // localStorage can be blocked (private mode, policies); the app must still work.
 const store = {
@@ -706,10 +757,10 @@ let edits = store.load(STORE.edits, {});   // fileKey -> {header lowercased: {v,
 
 // Message settings (saved on the device and inside the Excel)
 const settings = {
-  me: "", lastFy: "FY24", thisFy: "FY25", deadline: "March", openIn: "web",
+  me: "", lastFy: "FY25", thisFy: "FY26", deadline: "March", medLink: "", openIn: "web",
   tpl: { ippt: { ...DEF_TPL.ippt }, shoot: { ...DEF_TPL.shoot } },
 };
-const SETTING_INPUTS = { me: "rmMe", lastFy: "rmLastFy", thisFy: "rmThisFy", deadline: "rmDeadline" };
+const SETTING_INPUTS = { me: "rmMe", lastFy: "rmLastFy", thisFy: "rmThisFy", deadline: "rmDeadline", medLink: "rmMedLink" };
 let settingsVersion = 0, savedSettingsVersion = 0;   // bumped on every settings change; equal = saved
 const settingsEdited = () => settingsVersion !== savedSettingsVersion;
 
@@ -838,30 +889,45 @@ function detectColumns(hdrs) {
   const fy = lower.map((h, i) => ({ m: /^fy\s*'?(\d{2,4})\b.*ippt.*result/.exec(h), i }))
     .filter(x => x.m).map(x => ({ n: +x.m[1] % 100, i: x.i })).sort((a, b) => b.n - a.n);
   const thisFy = fy[0], lastFy = thisFy && fy.find(f => f.n === thisFy.n - 1);
+  // FY26 list: one result column with no FY ("IPPT Rs"); the FY comes from another header ("FY26 Planned ICT")
+  const plainResult = find(/ippt\s*(rs|res|results?)$/);
+  const anyFy = Math.max(-1, ...lower.map(h => +(/\bfy\s*'?(\d{2})\b/.exec(h) || [])[1] || -1));
 
   let name = find(/name|nama/);
   let phone = find(/(^|\W)(hp|phone|mobile|contact|handphone|number|tel|whatsapp)/);
   if (name < 0) name = 0;
   if (phone < 0 || phone === name) phone = hdrs.length > 1 ? (name === 0 ? 1 : 0) : 0;
-  const track = find(/track|nsfit/);
+  const track = find(/track|mfit|vfit/);
+  const unit = find(/organi[sz]ational unit|^org unit$|^team$/);
   return {
     name, phone,
     track: track >= 0 ? track : lastFy ? AUTO_TRACK : NO_COL,
     shoot: find(/shoot|rifle|sar21|marksman|range/),
-    thisFy: thisFy ? thisFy.i : NO_COL,
+    thisFy: thisFy ? thisFy.i : plainResult,
     lastFy: lastFy ? lastFy.i : NO_COL,
-    thisFyNum: thisFy ? thisFy.n : null,
+    thisFyNum: thisFy ? thisFy.n : plainResult >= 0 && anyFy >= 0 ? anyFy : null,
     elig: find(/eligib/),
     remarks: find(/remark|comment|note/),
-    group: lower.indexOf("sheet"),
+    nsfit: find(/nsfit.*attend/),
+    group: lower.includes("sheet") ? lower.indexOf("sheet") : unit,   // several sheets: by sheet, else by unit
   };
 }
 
-const cellOf = (rec, col) => col >= 0 ? String(rec.raw[col] ?? "").trim() : "";
+// Excel errors (a lookup with no match shows "#N/A") count as empty.
+const EXCEL_ERROR = /^#(N\/A|REF!|VALUE!|DIV\/0!|NAME\?|NUM!|NULL!)$/i;
+const cellOf = (rec, col) => { const v = col >= 0 ? String(rec.raw[col] ?? "").trim() : ""; return EXCEL_ERROR.test(v) ? "" : v; };
 // lower-case words only: "N/A" -> "n a", "Not Attempted!" -> "not attempted"
 const wordsOf = v => v.toLowerCase().replace(/[^a-z]+/g, " ").trim();
+// Result codes in the FY26 list's "IPPT Rs" column
+const RESULT_WORDS = { FL: "Fail", AB: "Absent", PS: "Pass", PI: "Pass with incentive", SV: "Silver", GD: "Gold" };
+const resultText = v => RESULT_WORDS[v.toUpperCase()] || v;
 const NOT_PASS = /\b(not|no|never)\s+pass/i;
-const passLike = v => /\b(pass|passed|gold|silver|pwi|incentive)\b/i.test(v) && !NOT_PASS.test(v);
+const passLike = v => /\b(pass|passed|gold|silver|pwi|incentive|ps|pi|sv|gd)\b/i.test(v) && !NOT_PASS.test(v);
+const failedLike = v => /\b(fail|failed|fl)\b/i.test(v) || NOT_PASS.test(v);
+const failLike = v => failedLike(v) || /\b(absent|ab)\b/i.test(v);
+// "9002 - RT/MANDATORY" in the VFIT/MFIT column = mandatory NSFIT
+const MANDATORY_FIT = /\b(mandatory|mfit|rt|remedial)\b/;
+const onMandatoryFit = rec => MANDATORY_FIT.test(wordsOf(cellOf(rec, cols.track)));
 // A bare score: the pass mark is not known, so the CO decides (no automatic message).
 const isScore = v => /^\d+(\.\d+)?$/.test(v);
 // "No", "No - medical", "N", "Not eligible", "Ineligible", "Exempt". Not "N/A" or "Not sure": those still get reminded.
@@ -872,10 +938,16 @@ function ipptStatus(rec) {
   if (NOT_ELIGIBLE.test(wordsOf(cellOf(rec, cols.elig)))) return "Not eligible";
   const thisFy = cellOf(rec, cols.thisFy);
   if (passLike(thisFy)) return "Done";
+  if (failLike(thisFy)) {                                 // failed or absent this FY
+    if (failedLike(thisFy) && (parseInt(cellOf(rec, cols.nsfit), 10) || 0) >= NSFIT_SESSIONS) return "NSFIT done";
+    return onMandatoryFit(rec) ? "Finish NSFIT" : "Retake";
+  }
   if (cols.track >= 0) {
-    const v = wordsOf(cellOf(rec, cols.track)).replace(/ /g, "");
-    if (v.includes("nsfit")) return "NSFIT";
-    if (v.includes("normal")) return "Normal";
+    // "9002 - RT/MANDATORY" (mandatory FIT) -> NSFIT; "9001 - IPT/NS FIT" (voluntary) or not on FIT (blank) -> Normal
+    const v = wordsOf(cellOf(rec, cols.track));
+    if (MANDATORY_FIT.test(v)) return "NSFIT";
+    if (!v || /\b(normal|voluntary|vfit|ipt)\b/.test(v)) return "Normal";
+    if (v.replace(/ /g, "").includes("nsfit")) return "NSFIT";
     return "Unclear";
   }
   if (cols.track !== AUTO_TRACK) return "Unclear";
@@ -902,7 +974,7 @@ function shootStatus(rec) {
 const statusOf = (rec, tab) => tab === "ippt" ? ipptStatus(rec) : shootStatus(rec);
 const hasIpptData = () => cols.track !== NO_COL || cols.thisFy >= 0;
 const hasShootData = () => cols.shoot >= 0;
-const hasTabData = tab => tab === "ippt" ? cols.track !== NO_COL : hasShootData();
+const hasTabData = tab => tab === "ippt" ? hasIpptData() : hasShootData();
 const ipptCleared = rec => IPPT_CLEARED.includes(ipptStatus(rec));
 const shootCleared = rec => SHOOT_CLEARED.includes(shootStatus(rec));
 
@@ -1054,6 +1126,7 @@ function cellText(c, shared, dateStyles) {
   if (!v) return "";
   const val = v.textContent;
   if (type === "s") return shared[parseInt(val, 10)] ?? "";
+  if (type === "e") return "";                         // Excel error such as #N/A: no value
   if ((type && type !== "n") || val === "" || !isFinite(Number(val))) return val;
   const kind = dateStyles.get(+(c.getAttribute("s") || 0));
   if (kind) return serialToText(Number(val), kind);
@@ -1146,12 +1219,7 @@ function combineSheets(sheetList) {
    8. RECORDS (one per person)
    ===================================================================== */
 // Short hash of name + HP, so reminders and edits follow a person even if rows move.
-function personKey(name, phone) {
-  const s = norm(name) + "|" + normPhone(phone);
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
-  return (h >>> 0).toString(36);
-}
+const personKey = (name, phone) => fnv(norm(name) + "|" + normPhone(phone));
 
 // Name/HP derived fields; called again when either is edited.
 function setIdentity(rec) {
@@ -1572,15 +1640,22 @@ function scheduleAutoSave() {
 /* =====================================================================
    14. MESSAGE SETTINGS
    ===================================================================== */
-const settingsSnapshot = () => ({ me: settings.me, lastFy: settings.lastFy, thisFy: settings.thisFy, deadline: settings.deadline, tpl: settings.tpl });
+// Only wording the CO changed is stored, so better default wording still reaches everyone else.
+const changedTemplates = () => Object.fromEntries(TABS.map(tab =>
+  [tab, Object.fromEntries(Object.entries(settings.tpl[tab]).filter(([k, v]) => v !== DEF_TPL[tab][k]))]));
+const settingsSnapshot = () => ({ me: settings.me, lastFy: settings.lastFy, thisFy: settings.thisFy, deadline: settings.deadline,
+  medLink: settings.medLink, tpl: changedTemplates() });
 
 // Takes only known keys and templates, so old or foreign data can't break anything.
+// A stored copy of an earlier default wording is dropped (it was saved before only changes were stored).
 function applySettings(s) {
   if (!s) return;
   for (const k of Object.keys(SETTING_INPUTS)) if (typeof s[k] === "string") settings[k] = s[k];
   if (s.openIn === "app" || s.openIn === "web") settings.openIn = s.openIn;
-  for (const tab of TABS) for (const k of Object.keys(DEF_TPL[tab]))
-    if (typeof s.tpl?.[tab]?.[k] === "string") settings.tpl[tab][k] = s.tpl[tab][k];
+  for (const tab of TABS) for (const k of Object.keys(DEF_TPL[tab])) {
+    const v = s.tpl?.[tab]?.[k];
+    if (typeof v === "string" && !OLD_DEFAULT_TPL.has(fnv(v))) settings.tpl[tab][k] = v;
+  }
 }
 const saveSettings = () => store.save(STORE.settings, { ...settingsSnapshot(), openIn: settings.openIn });
 
@@ -1603,11 +1678,17 @@ function settingsChanged() {
   dataChanged({ soon: true });
 }
 
+const PLACEHOLDER = /\{(name|me|lastFY|thisFY|deadline|result|nsfit|medLink)\}/g;
 function fillTemplate(tpl, rec) {
-  const values = { name: rec.name, me: settings.me.trim(), lastFY: settings.lastFy, thisFY: settings.thisFy, deadline: settings.deadline };
+  const values = {
+    name: rec.name, me: settings.me.trim(), lastFY: settings.lastFy, thisFY: settings.thisFy, deadline: settings.deadline.trim(),
+    result: resultText(cellOf(rec, cols.thisFy)), nsfit: cellOf(rec, cols.nsfit), medLink: settings.medLink.trim(),
+  };
   if (!values.me) tpl = tpl.replaceAll(", this is {me}", "");
+  // a line whose placeholder is empty for this person is left out (no NSFIT count, no link set...)
+  const lines = tpl.split("\n").filter(line => [...line.matchAll(PLACEHOLDER)].every(m => values[m[1]]));
   // a function replacer inserts values literally (a "$&" in a name stays "$&")
-  return tpl.replace(/\{(name|me|lastFY|thisFY|deadline)\}/g, (_, key) => values[key]);
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").replace(PLACEHOLDER, (_, key) => values[key]);
 }
 
 // Chat link with optional pre-filled message.
@@ -1887,9 +1968,12 @@ $("roster").addEventListener("click", e => {
    19. SEND REMINDER TAB
    ===================================================================== */
 function fillRemindSelects() {
-  const groups = cols.group >= 0 ? [...new Set(records.map(r => cellOf(r, cols.group)).filter(Boolean))] : [];
+  const counts = new Map();
+  if (cols.group >= 0) for (const r of records) { const g = cellOf(r, cols.group); if (g) counts.set(g, (counts.get(g) || 0) + 1); }
+  const groups = [...counts.keys()];
+  if (headers[cols.group] !== "Sheet") groups.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));   // sheets keep file order
   $("rmGroup").innerHTML = `<option value="ALL">All (${records.length})</option>` +
-    groups.map(g => `<option value="${esc(g)}">${esc(g)} (${records.filter(r => cellOf(r, cols.group) === g).length})</option>`).join("");
+    groups.map(g => `<option value="${esc(g)}">${esc(g)} (${counts.get(g)})</option>`).join("");
   $("rmGroupWrap").hidden = !groups.length;
 }
 
@@ -1925,10 +2009,13 @@ function remindRowHtml({ rec, status }, tab) {
   if (!tpl) action += `<span class="ph">${esc(STATUS_NOTE[status] || "")}</span>`;
   else if (!hasValidHp(rec)) action += `<span class="ph warn">No valid HP</span>`;
   else action += `<button class="btn small" data-preview>Preview</button>
-    <a class="btn small green send" href="${esc(chatLink(rec, tab))}" target="spf_wa">${at ? "Resend" : "Send"}</a>`;
+    <a class="btn small green send" href="${esc(waLink(rec))}" target="spf_wa">${at ? "Resend" : "Send"}</a>`;   // message added on tap (rmList click)
 
   const context = tab === "ippt"
-    ? [cols.lastFy >= 0 && `${settings.lastFy}: ${cellOf(rec, cols.lastFy) || "-"}`, cols.thisFy >= 0 && `${settings.thisFy}: ${cellOf(rec, cols.thisFy) || "-"}`]
+    ? [cols.lastFy >= 0 && `${settings.lastFy}: ${cellOf(rec, cols.lastFy) || "-"}`,
+       cols.thisFy >= 0 && `${settings.thisFy}: ${resultText(cellOf(rec, cols.thisFy)) || "-"}`,
+       cols.track >= 0 && cellOf(rec, cols.track).replace(/^\d+\s*-\s*/, ""),          // "9002 - RT/MANDATORY" -> "RT/MANDATORY"
+       cellOf(rec, cols.nsfit) && `NSFIT attended: ${cellOf(rec, cols.nsfit)}`]
     : [`Shooting: ${cellOf(rec, cols.shoot) || "-"}`];
   if (cols.group >= 0 && view.group === "ALL") context.push(cellOf(rec, cols.group));
   const remark = cellOf(rec, cols.remarks);
@@ -2050,7 +2137,9 @@ function startBatch() {
   if (cooldownLeftMs() > 0) {
     if (!confirm(`Your last batch ended ${fmtWhen(batch.endedAt)}. Wait 1-2 days between batches so WhatsApp doesn't flag your number. Start anyway?`)) return;
   }
-  if (!settings.me.trim() && !confirm("Your name is blank, so messages won't say who they're from. Start anyway?")) return;
+  const usesLink = Object.values(settings.tpl[tab]).some(t => t.includes("{medLink}"));
+  const blank = [!settings.me.trim() && "Your name", usesLink && !settings.medLink.trim() && "Medical review link"].filter(Boolean);
+  if (blank.length && !confirm(`Blank: ${blank.join(", ")}. Messages will go out without it. Start anyway?`)) return;
   const queue = remindItems(tab)
     .filter(i => (view.filter === "ALL" || i.status === view.filter) && stillToSend(i.rec, tab))
     .slice(0, size).map(i => i.rec);
