@@ -64,7 +64,7 @@
   .btn.green { background: #5fd68a; }
   .btn.green:hover { background: #8be8aa; }
   .linkbtn { margin-top: 14px; background: none; border: 0; text-decoration: underline; cursor: pointer; color: var(--muted); font-size: 12px; }
-  .code { font-size: 11px; padding: 1px 6px; color: #fff; border: 2px solid #000; flex: none; }
+  .code { width: 10px; height: 22px; border: 2px solid #000; flex: none; }   /* status line, no text */
   .pill { font-size: 11px; padding: 1px 8px; border: 2px solid #000; color: #fff; text-transform: uppercase; }
   .tag { font-size: 10px; background: var(--ccl); color: #000; padding: 1px 5px; border: 2px solid #000; }
   .ph { font-size: 13px; color: var(--muted); }
@@ -173,7 +173,7 @@
   #result.show { display: block; animation: pop .25s steps(4); }
   @keyframes pop { from { transform: translateY(12px); opacity: 0; } }
   .ticket-head { display: flex; align-items: center; gap: 14px; padding: 16px; background: #fff; border-bottom: var(--px) solid #000; flex-wrap: wrap; }
-  .station-code { color: #fff; border: var(--px) solid #000; padding: 6px 12px; font-size: 20px; box-shadow: 4px 4px 0 #000; }
+  .station-code { width: 18px; height: 44px; border: var(--px) solid #000; box-shadow: 4px 4px 0 #000; }
   .ticket-head h2 { margin: 0; font-size: 24px; flex: 1; min-width: 200px; word-break: break-word; }
   .ticket-head .actions { display: flex; gap: 10px; flex-wrap: wrap; }
   .ticket-hint { padding: 0 16px; }
@@ -368,7 +368,7 @@
     <section class="panel" id="result">
       <div class="panel-title" id="resTitle" style="background:var(--ewl)"><span class="dot"></span>Now Arriving</div>
       <div class="ticket-head">
-        <div class="station-code" id="resCode">NS1</div>
+        <div class="station-code" id="resCode"></div>
         <h2 id="resName"></h2>
         <div class="actions">
           <button class="btn small green" id="copyPhone">Copy HP</button>
@@ -504,11 +504,6 @@
 /* =====================================================================
    1. CONSTANTS
    ===================================================================== */
-const LINES = [
-  { code: "NS", color: "#d42e12" }, { code: "EW", color: "#009645" },
-  { code: "NE", color: "#9900aa" }, { code: "CC", color: "#fa9e0d" },
-  { code: "DT", color: "#005ec4" }, { code: "TE", color: "#9d5b25" },
-];
 const TABS = ["ippt", "shoot"];
 const TAB_LABEL = { ippt: "IPPT", shoot: "Shooting" };
 const LOG_COLS = { ippt: "IPPT reminder sent", shoot: "Shooting reminder sent" };   // added to the exported Excel
@@ -727,7 +722,7 @@ function mergeLatest(target, key, src) {
 }
 
 // --- small HTML builders ---
-const codeBadge = rec => `<span class="code" style="background:${rec.color}">${rec.code}</span>`;
+const codeBadge = color => `<span class="code" style="background:${color}"></span>`;   // status line, coloured like its pill or group
 const statusPill = (status, prefix = "") => `<span class="pill" style="background:${STATUS_COLOR[status]}">${esc(prefix + status)}</span>`;
 const chipsHtml = (options, active) => options
   .map(o => `<button class="chip${o.value === active ? " active" : ""}" data-f="${esc(o.value)}">${esc(o.label)} ${o.count}</button>`).join("");
@@ -1233,12 +1228,9 @@ function setIdentity(rec) {
 
 function buildRecords() {
   records = [];
-  const perLine = {};
   rows.forEach((raw, idx) => {
     if (!(raw[cols.name] || "").trim() && !(raw[cols.phone] || "").trim()) return;
-    const line = LINES[records.length % LINES.length];
-    perLine[line.code] = (perLine[line.code] || 0) + 1;
-    const rec = { idx, raw, code: line.code + perLine[line.code], color: line.color };
+    const rec = { idx, raw };
     setIdentity(rec);
     records.push(rec);
   });
@@ -1781,7 +1773,7 @@ function renderSuggestions(box) {
   box.active = box.items.length ? 0 : -1;
   box.list.innerHTML = box.items.length
     ? box.items.map((m, i) => `<div class="opt${i === 0 ? " active" : ""}" data-i="${i}">
-        ${codeBadge(m.rec)}<span class="main">${box.main(m.rec, q)}</span><span class="sub">${box.sub(m.rec)}</span>
+        ${codeBadge(PRIORITY[priorityOf(m.rec)].color)}<span class="main">${box.main(m.rec, q)}</span><span class="sub">${box.sub(m.rec)}</span>
         ${m.fuzzy ? '<span class="tag">~ CLOSE</span>' : ""}</div>`).join("")
     : `<div class="none">No match found. Check spelling or digits.</div>`;
   box.list.classList.add("open");
@@ -1842,9 +1834,9 @@ function fieldHtml(rec, col) {
 // quiet = redraw in place without the pop-in animation and scroll
 function showResult(rec, quiet = false) {
   selected = rec;
-  $("resCode").textContent = rec.code;
-  $("resCode").style.background = rec.color;
-  $("resTitle").style.background = rec.color;
+  const color = PRIORITY[priorityOf(rec)].color;
+  $("resCode").style.background = color;
+  $("resTitle").style.background = color;
   $("resName").textContent = rec.name || "(no name)";
   $("fields").innerHTML = headers.map((_, col) => fieldHtml(rec, col)).join("");
   $("openWa").hidden = !hasValidHp(rec);
@@ -1927,7 +1919,7 @@ function rosterRowHtml(rec, priority) {
     hasShootData() ? statusPill(shootStatus(rec), "Shoot: ") : "",
   ].join("");
   return `<div class="ro p${priority}" data-idx="${rec.idx}">
-    ${codeBadge(rec)}<span class="nm">${esc(rec.name)}</span><span class="ph">${esc(displayPhone(rec))}</span>${pills}</div>`;
+    ${codeBadge(PRIORITY[priority].color)}<span class="nm">${esc(rec.name)}</span><span class="ph">${esc(displayPhone(rec))}</span>${pills}</div>`;
 }
 
 function renderRoster() {
@@ -2020,7 +2012,7 @@ function remindRowHtml({ rec, status }, tab) {
   if (cols.group >= 0 && view.group === "ALL") context.push(cellOf(rec, cols.group));
   const remark = cellOf(rec, cols.remarks);
   return `<div class="rm-row${at ? " sent" : ""}" data-idx="${rec.idx}">
-    ${codeBadge(rec)}
+    ${codeBadge(STATUS_COLOR[status])}
     <span class="nm">${esc(rec.name)}<span class="ctx">${esc(context.filter(Boolean).join(" · "))}${remark ? `<br>&#8220;${esc(remark)}&#8221;` : ""}</span></span>
     <span class="ph">${esc(displayPhone(rec))}</span>
     ${statusPill(status)}
