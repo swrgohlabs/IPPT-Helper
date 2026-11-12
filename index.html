@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SPF Command Link</title>
+<title>TRANSCOM Command Link</title>
 <!-- 8-bit favicon: 16x16 pixel MRT train front (NSL red stripe), inline, one file -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23161628'/%3E%3Cpath fill='%23f2f2f2' d='M3 2h10v1h1v9h-1v1H3v-1H2V3h1z'/%3E%3Crect x='4' y='4' width='8' height='4' fill='%23243b6b'/%3E%3Crect x='7' y='4' width='2' height='4' fill='%234a6fb5'/%3E%3Crect x='2' y='9' width='12' height='2' fill='%23d42e12'/%3E%3Crect x='3' y='11' width='2' height='1' fill='%23ffd23f'/%3E%3Crect x='11' y='11' width='2' height='1' fill='%23ffd23f'/%3E%3Crect x='3' y='14' width='10' height='1' fill='%23009645'/%3E%3C/svg%3E">
 <style>
@@ -64,7 +64,7 @@
   .btn.green { background: #5fd68a; }
   .btn.green:hover { background: #8be8aa; }
   .linkbtn { margin-top: 14px; background: none; border: 0; text-decoration: underline; cursor: pointer; color: var(--muted); font-size: 12px; }
-  .code { width: 10px; height: 22px; border: 2px solid #000; flex: none; }   /* status line, no text */
+  .status-bar { width: 10px; height: 22px; border: 2px solid #000; flex: none; }   /* status line, no text */
   .pill { font-size: 11px; padding: 1px 8px; border: 2px solid #000; color: #fff; text-transform: uppercase; }
   .tag { font-size: 10px; background: var(--ccl); color: #000; padding: 1px 5px; border: 2px solid #000; }
   .ph { font-size: 13px; color: var(--muted); }
@@ -175,7 +175,7 @@
   #result.show { display: block; animation: pop .25s steps(4); }
   @keyframes pop { from { transform: translateY(12px); opacity: 0; } }
   .ticket-head { display: flex; align-items: center; gap: 14px; padding: 16px; background: #fff; border-bottom: var(--px) solid #000; flex-wrap: wrap; }
-  .station-code { width: 18px; height: 44px; border: var(--px) solid #000; box-shadow: 4px 4px 0 #000; }
+  .ticket-bar { width: 18px; height: 44px; border: var(--px) solid #000; box-shadow: 4px 4px 0 #000; }
   .ticket-head h2 { margin: 0; font-size: 24px; flex: 1; min-width: 200px; word-break: break-word; }
   .ticket-head .actions { display: flex; gap: 10px; flex-wrap: wrap; }
   .ticket-hint { padding: 0 16px; }
@@ -188,7 +188,7 @@
   .field.phone .k { background: var(--ewl); }
   .field.result { border-color: var(--c); box-shadow: 4px 4px 0 var(--c); }
   .field.result .k { background: var(--c); }
-  .field.result .v { font-size: 20px; font-weight: bold; }
+  .field.result .v { font-size: 20px; }
   .field .st { margin-left: auto; }
   .field .st ~ .pen { margin-left: 0; }
   .field.editable { cursor: text; }
@@ -296,7 +296,7 @@
 <div class="lines"><i style="background:var(--nsl)"></i><i style="background:var(--ewl)"></i><i style="background:var(--nel)"></i><i style="background:var(--ccl)"></i><i style="background:var(--dtl)"></i><i style="background:var(--tel)"></i></div>
 <header class="sign">
   <div class="wrap sign-inner">
-    <div class="roundel">SPF</div>
+    <div class="roundel">TRS</div>
     <div>
       <h1>Command Link</h1>
       <small>WHATSAPP GROUP DIRECTORY &middot; COMMANDING OFFICERS</small>
@@ -384,7 +384,7 @@
     <section class="panel" id="result">
       <div class="panel-title" id="resTitle" style="background:var(--ewl)"><span class="dot"></span>Now Arriving</div>
       <div class="ticket-head">
-        <div class="station-code" id="resCode"></div>
+        <div class="ticket-bar" id="resCode"></div>
         <h2 id="resName"></h2>
         <div class="actions">
           <button class="btn small green" id="copyPhone">Copy HP</button>
@@ -426,8 +426,6 @@
             <input id="rmThisFy" type="text" size="6" autocomplete="off"></label>
           <label class="rm-f rm-ippt">Deadline
             <input id="rmDeadline" type="text" size="10" autocomplete="off"></label>
-          <label class="rm-f rm-ippt">Medical review link
-            <input id="rmMedLink" type="url" size="24" placeholder="paste link" autocomplete="off"></label>
           <label class="rm-f" id="rmGroupWrap">Group <select id="rmGroup"></select></label>
           <div class="rm-f">Open chats in
             <label class="switch"><input id="rmOpenIn" type="checkbox" role="switch">
@@ -436,7 +434,7 @@
 
         <details class="rm-edit">
           <summary>Edit message wording</summary>
-          <div class="hint">Placeholders: <b>{name}</b> <b>{me}</b> <b>{lastFY}</b> <b>{thisFY}</b> <b>{deadline}</b> <b>{result}</b> <b>{nsfit}</b> <b>{fit}</b> <b>{medLink}</b>. A line whose placeholder is empty is left out. WhatsApp bold = *text*.</div>
+          <div class="hint">Placeholders: <b>{name}</b> <b>{me}</b> <b>{lastFY}</b> <b>{thisFY}</b> <b>{deadline}</b> <b>{result}</b> <b>{nsfit}</b> <b>{fit}</b>. A line whose placeholder is empty is left out. WhatsApp bold = *text*.</div>
           <div id="rmTemplates"></div>
           <button class="btn small" id="rmResetTpl">Reset to default wording</button>
         </details>
@@ -524,18 +522,16 @@ const LOG_COLS = { ippt: "IPPT reminder sent", shoot: "Shooting reminder sent" }
 const META_SHEET = "_SPF";                                                          // hidden sheet: save time + settings
 const STORE = { actions: "spf.actions.v1", edits: "spf.edits.v1", settings: "spf.remind.v1", batchEnded: "spf.batch.v1" };
 const HP_LENGTH = 8, COUNTRY_CODE = "65";            // Singapore mobile numbers
-const NO_COL = -1, AUTO_TRACK = -2;       // column choices: none / work out IPPT track from FY results
+const NO_COL = -1;                         // column not in the sheet
 const NSFIT_SESSIONS = 9;                  // failing IPPT after this many NSFIT sessions meets the requirement
 const NSFIT_TRACK = ["NSFIT", "Finish NSFIT", "NSFIT done"];   // statuses whose ticket highlights NSFIT Attended
-const BATCH_MAX = 20, COOLDOWN_HOURS = 24;       // wait 1-2 days between batches so WhatsApp doesn't flag the number as spam
+const BATCH_MAX = 20, COOLDOWN_MS = 24 * 3600000;       // wait 1-2 days between batches so WhatsApp doesn't flag the number as spam
 const EXCEL_EPOCH = 25569, DAY_MS = 86400000;
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 // Message wording. A line with a placeholder that is empty for that person (no NSFIT count, no link set) is left out.
 const GOOD_TO_KNOW =
-`*Good to know:* you can get a $100 NSEA incentive (TransCom initiative) if you improve your IPPT result vs last FY and complete your ICT.
-
-*Medical review / exemption:* submit here {medLink}`;
+`*Good to know:* you can get a $100 NSEA incentive (TransCom initiative) if you improve your IPPT result vs last FY and complete your ICT.`;
 const DEF_TPL = {
   ippt: {
     NSFIT:
@@ -615,19 +611,20 @@ Please reply as soon as possible. Thank you!`,
 };
 const TPL_LABEL = { NSFIT: "On NSFIT (mandatory or voluntary)", "Finish NSFIT": "On NSFIT, not passed this FY", Retake: "Not passed this FY", Normal: "Normal track", "Not attempted": "Shooting not attempted" };
 // Fingerprints (fnv) of earlier default wording. A stored copy of one of these is replaced by today's default.
-const OLD_DEFAULT_TPL = new Set(["kens1e", "195hpiw", "w6x9dy", "ckxh9l", "pb0sqg", "1yyr6uf", "e0j56p", "xl0qta"]);
+// Only wording that differs from the default is stored, so this only matters for copies saved before that rule.
+const OLD_DEFAULT_TPL = new Set(["kens1e", "195hpiw", "w6x9dy", "ckxh9l", "pb0sqg", "1yyr6uf", "e0j56p", "xl0qta", "z1qbsu", "gtj0pa", "knm763", "1fr2ktu"]);
 
 // Statuses per reminder tab. A status with a template gets a message; the rest are notes.
-const STATUS_ORDER = { ippt: ["NSFIT", "Finish NSFIT", "Retake", "Normal", "Done", "NSFIT done", "Not eligible"], shoot: ["Not attempted", "Pass", "Fail"] };
+const STATUS_ORDER = { ippt: ["NSFIT", "Finish NSFIT", "Retake", "Normal", "Done", "NSFIT done"], shoot: ["Not attempted", "Pass", "Fail"] };
 const STATUS_COLOR = {
-  NSFIT: "#d42e12", "Finish NSFIT": "#fa9e0d", Retake: "#9900aa", "NSFIT done": "#009645", Normal: "#005ec4", Done: "#009645", "Not eligible": "#6b6b80",
-  "Not attempted": "#fa9e0d", Pass: "#009645", Fail: "#9d5b25", Unclear: "#6b6b80",
+  NSFIT: "var(--nsl)", "Finish NSFIT": "var(--ccl)", Retake: "var(--nel)", "NSFIT done": "var(--ewl)", Normal: "var(--dtl)", Done: "var(--ewl)",
+  "Not attempted": "var(--ccl)", Pass: "var(--ewl)", Fail: "var(--tel)", Unclear: "var(--muted)",
 };
 const STATUS_NOTE = {
-  Done: "Passed this FY, no reminder", "NSFIT done": "Failed, 9+ NSFIT, no reminder", "Not eligible": "Not eligible, no reminder",
+  Done: "Passed this FY, no reminder", "NSFIT done": "Failed, 9+ NSFIT, no reminder",
   Pass: "Attempted, no action", Fail: "Attempted, no action", Unclear: "Check sheet value",
 };
-const IPPT_CLEARED = ["Done", "NSFIT done", "Not eligible"];
+const IPPT_CLEARED = ["Done", "NSFIT done"];
 const SHOOT_CLEARED = ["Pass", "Fail"];
 
 // Full list groups, most outstanding first.
@@ -706,6 +703,7 @@ function normPhone(s) {
 }
 const fmtPhone = d => d.length === HP_LENGTH ? d.slice(0, 4) + " " + d.slice(4) : d;
 const displayPhone = rec => fmtPhone(rec.phoneNorm || rec.phone);
+const intlPhone = rec => COUNTRY_CODE + rec.phoneNorm;   // 6591234567
 const hasValidHp = rec => rec.phoneNorm.length === HP_LENGTH;
 
 // --- dates ---
@@ -730,7 +728,7 @@ function parseLogTime(v) {
   if (m) return new Date(+m[1], m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)).getTime();
   const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/.exec(v);
   if (dmy) return new Date(+dmy[3], dmy[2] - 1, +dmy[1], +(dmy[4] || 0), +(dmy[5] || 0)).getTime();
-  if (/^\d+(\.\d+)?$/.test(v)) {
+  if (isNumber(v)) {                                    // a bare number: an Excel date serial
     const d = serialToUtc(parseFloat(v));
     return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes()).getTime();
   }
@@ -749,7 +747,7 @@ function mergeLatest(target, key, src) {
 }
 
 // --- small HTML builders ---
-const codeBadge = color => `<span class="code" style="background:${color}"></span>`;   // status line, coloured like its pill or group
+const statusBar = color => `<span class="status-bar" style="background:${color}"></span>`;   // status line, coloured like its pill or group
 const statusPill = (status, prefix = "") => `<span class="pill" style="background:${STATUS_COLOR[status]}">${esc(prefix + status)}</span>`;
 const chipsHtml = (options, active) => options
   .map(o => `<button class="chip${o.value === active ? " active" : ""}" data-f="${esc(o.value)}">${esc(o.label)} ${o.count}</button>`).join("");
@@ -779,10 +777,10 @@ let edits = store.load(STORE.edits, {});   // fileKey -> {header lowercased: {v,
 
 // Message settings (saved on the device and inside the Excel)
 const settings = {
-  me: "", lastFy: "FY25", thisFy: "FY26", deadline: "March", medLink: "", openIn: "web",
+  me: "", lastFy: "FY25", thisFy: "FY26", deadline: "March", openIn: "web",
   tpl: { ippt: { ...DEF_TPL.ippt }, shoot: { ...DEF_TPL.shoot } },
 };
-const SETTING_INPUTS = { me: "rmMe", lastFy: "rmLastFy", thisFy: "rmThisFy", deadline: "rmDeadline", medLink: "rmMedLink" };
+const SETTING_INPUTS = { me: "rmMe", lastFy: "rmLastFy", thisFy: "rmThisFy", deadline: "rmDeadline" };
 let settingsVersion = 0, savedSettingsVersion = 0;   // bumped on every settings change; equal = saved
 const settingsEdited = () => settingsVersion !== savedSettingsVersion;
 
@@ -907,12 +905,8 @@ function searchPhone(query) {
 function detectColumns(hdrs) {
   const lower = hdrs.map(h => String(h).toLowerCase());
   const find = re => lower.findIndex(h => re.test(h));
-  // "FY 24 IPPT Results", "FY25 IPPT Result" ... newest = this FY, the one before = last FY
-  const fy = lower.map((h, i) => ({ m: /^fy\s*'?(\d{2,4})\b.*ippt.*result/.exec(h), i }))
-    .filter(x => x.m).map(x => ({ n: +x.m[1] % 100, i: x.i })).sort((a, b) => b.n - a.n);
-  const thisFy = fy[0], lastFy = thisFy && fy.find(f => f.n === thisFy.n - 1);
-  // FY26 list: one result column with no FY ("IPPT Rs"); the FY comes from another header ("FY26 Planned ICT")
-  const plainResult = find(/ippt\s*(rs|res|results?)$/);
+  // This FY's result: "IPPT Rs"; its FY comes from another header ("FY26 Planned ICT")
+  const result = find(/ippt\s*(rs|res|results?)$/);
   const anyFy = Math.max(-1, ...lower.map(h => +(/\bfy\s*'?(\d{2})\b/.exec(h) || [])[1] || -1));
 
   let name = find(/name|nama/);
@@ -923,12 +917,10 @@ function detectColumns(hdrs) {
   const unit = find(/organi[sz]ational unit|^org unit$|^team$/);
   return {
     name, phone,
-    track: track >= 0 ? track : lastFy ? AUTO_TRACK : NO_COL,
+    track,
     shoot: find(/shoot|rifle|sar21|marksman|range/),
-    thisFy: thisFy ? thisFy.i : plainResult,
-    lastFy: lastFy ? lastFy.i : NO_COL,
-    thisFyNum: thisFy ? thisFy.n : plainResult >= 0 && anyFy >= 0 ? anyFy : null,
-    elig: find(/eligib/),
+    thisFy: result,
+    thisFyNum: result >= 0 && anyFy >= 0 ? anyFy : null,
     remarks: find(/remark|comment|note/),
     nsfit: find(/nsfit.*attend/),
     group: lower.includes("sheet") ? lower.indexOf("sheet") : unit,   // several sheets: by sheet, else by unit
@@ -951,40 +943,27 @@ const failLike = v => failedLike(v) || /\b(absent|ab)\b/i.test(v);
 // "9002 - RT/Mandatory" = mandatory NS FIT, "9001 - IPT/NS FIT" = voluntary NS FIT, blank = not on NS FIT
 const MANDATORY_FIT = /\b(mandatory|mfit|rt|remedial)\b/;
 const VOLUNTARY_FIT = /\b(ipt|vfit|voluntary)\b|\bns ?fit\b/;
-const trackWords = rec => wordsOf(cellOf(rec, cols.track));
-const onNsFit = rec => MANDATORY_FIT.test(trackWords(rec)) || VOLUNTARY_FIT.test(trackWords(rec));
-// {fit} in messages: "mandatory NSFIT" / "voluntary NSFIT" / "NSFIT" (Auto, from last FY = mandatory)
-const fitText = rec => cols.track === AUTO_TRACK || MANDATORY_FIT.test(trackWords(rec)) ? "mandatory NSFIT"
-  : VOLUNTARY_FIT.test(trackWords(rec)) ? "voluntary NSFIT" : "NSFIT";
-// A bare score: the pass mark is not known, so the CO decides (no automatic message).
-const isScore = v => /^\d+(\.\d+)?$/.test(v);
-// "No", "No - medical", "N", "Not eligible", "Ineligible", "Exempt". Not "N/A" or "Not sure": those still get reminded.
-const NOT_ELIGIBLE = /^(no|not eligible|ineligible|exempt|exempted)\b|^n$/;
+// Track column value -> "mandatory" / "voluntary" (on NS FIT), "normal" (blank or "normal"), or "other"
+function trackOf(rec) {
+  const w = wordsOf(cellOf(rec, cols.track));
+  return MANDATORY_FIT.test(w) ? "mandatory" : VOLUNTARY_FIT.test(w) ? "voluntary" : !w || /\bnormal\b/.test(w) ? "normal" : "other";
+}
+const onNsFit = rec => ["mandatory", "voluntary"].includes(trackOf(rec));
+// {fit} in messages: "mandatory NSFIT" / "voluntary NSFIT"
+const fitText = rec => onNsFit(rec) ? `${trackOf(rec)} NSFIT` : "NSFIT";
+const isNumber = v => /^\d+(\.\d+)?$/.test(v);   // a bare number
 const NOT_ATTEMPTED = /^(not attempted|not attempt|not yet attempted|not yet|not done|not taken|no|nil|na|n a|nt|pending|unattempted|absent)$/;
 
 function ipptStatus(rec) {
-  if (NOT_ELIGIBLE.test(wordsOf(cellOf(rec, cols.elig)))) return "Not eligible";
   const thisFy = cellOf(rec, cols.thisFy);
   if (passLike(thisFy)) return "Done";
   if (failLike(thisFy)) {                                 // failed or absent this FY
     if (failedLike(thisFy) && (parseInt(cellOf(rec, cols.nsfit), 10) || 0) >= NSFIT_SESSIONS) return "NSFIT done";
     return onNsFit(rec) ? "Finish NSFIT" : "Retake";
   }
-  if (cols.track >= 0) {
-    // on NS FIT, mandatory (9002) or voluntary (9001) -> NSFIT; not on NS FIT (blank) -> Normal
-    const v = trackWords(rec);
-    if (onNsFit(rec)) return "NSFIT";
-    if (!v || /\bnormal\b/.test(v)) return "Normal";
-    return "Unclear";
-  }
-  if (cols.track !== AUTO_TRACK) return "Unclear";
-  // Auto: failed or did not take IPPT last FY -> NSFIT
-  if (isScore(thisFy)) return "Unclear";
-  const last = cellOf(rec, cols.lastFy);
-  if (passLike(last)) return "Normal";
-  if (isScore(last)) return "Unclear";
-  if (!last || /fail|absent/i.test(last) || NOT_PASS.test(last)) return "NSFIT";
-  return "Unclear";
+  if (cols.track < 0) return "Unclear";
+  // on NS FIT, mandatory (9002) or voluntary (9001) -> NSFIT; not on NS FIT (blank) -> Normal
+  return { mandatory: "NSFIT", voluntary: "NSFIT", normal: "Normal" }[trackOf(rec)] || "Unclear";
 }
 
 // Only clear "not attempted" wording (or a blank cell) gets a reminder.
@@ -999,13 +978,14 @@ function shootStatus(rec) {
 }
 
 const statusOf = (rec, tab) => tab === "ippt" ? ipptStatus(rec) : shootStatus(rec);
-const hasIpptData = () => cols.track !== NO_COL || cols.thisFy >= 0;
+const hasIpptData = () => cols.track >= 0 || cols.thisFy >= 0;
 const hasShootData = () => cols.shoot >= 0;
 const hasTabData = tab => tab === "ippt" ? hasIpptData() : hasShootData();
 const ipptCleared = rec => IPPT_CLEARED.includes(ipptStatus(rec));
 const shootCleared = rec => SHOOT_CLEARED.includes(shootStatus(rec));
 
 // 0 = IPPT outstanding, 1 = IPPT ok but shooting outstanding, 2 = all clear
+const priorityColor = rec => PRIORITY[priorityOf(rec)].color;
 function priorityOf(rec) {
   if (hasIpptData() && !ipptCleared(rec)) return 0;
   if (hasShootData() && !shootCleared(rec)) return 1;
@@ -1261,10 +1241,9 @@ function setIdentity(rec) {
 function buildRecords() {
   records = [];
   rows.forEach((raw, idx) => {
-    if (!(raw[cols.name] || "").trim() && !(raw[cols.phone] || "").trim()) return;
     const rec = { idx, raw };
     setIdentity(rec);
-    records.push(rec);
+    if (rec.name || rec.phone) records.push(rec);   // skip blank rows
   });
   recordsByRow = new Map(records.map(r => [r.idx, r]));
 }
@@ -1299,7 +1278,7 @@ function loadData(sheetList, label, meta, isDemo) {
 
 // A key column missing from one sheet makes that sheet's people look blank (e.g. everyone NSFIT), so say so.
 function missingColumns() {
-  const keyCols = [cols.name, cols.phone, cols.lastFy, cols.thisFy, cols.elig, cols.track, cols.shoot].filter(c => c >= 0);
+  const keyCols = [cols.name, cols.phone, cols.thisFy, cols.track, cols.shoot].filter(c => c >= 0);
   return sourceSheets.flatMap(s => keyCols.filter(c => !s.map.includes(c)).map(c => `sheet "${s.name}" has no "${headers[c]}" column`));
 }
 
@@ -1562,7 +1541,7 @@ function buildXlsx() {
     const sent = rec ? actions[rec.key] || {} : {};
     tables[src.sheet].push([...src.cells, ...TABS.map(tab => sent[tab] ? fmtLogTime(sent[tab]) : "")]);
   });
-  const meta = [["key", "value"], ["savedAt", new Date().toISOString()], ["app", "SPF Command Link"], ["source", fileName],
+  const meta = [["key", "value"], ["savedAt", new Date().toISOString()], ["app", "TRANSCOM Command Link"], ["source", fileName],
                 ["settings", JSON.stringify(settingsSnapshot())]];
   const sheets = [...sourceSheets.map((s, i) => ({ name: s.name, xml: sheetXml(tables[i], true), hidden: false })),
                   { name: META_SHEET, xml: sheetXml(meta, false), hidden: true }];
@@ -1585,10 +1564,9 @@ function buildXlsx() {
 }
 
 function exportFileName() {
-  const d = new Date();
-  const base = (fileName && !demoMode ? fileName : "SPF_list")
+  const base = (fileName && !demoMode ? fileName : "TRANSCOM_list")
     .replace(/\.(xlsx|csv|tsv|txt)$/i, "").replace(/_updated_\d{4}-\d{2}-\d{2}(_\d{4})?$/, "");
-  return `${base}_updated_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.xlsx`;
+  return `${base}_updated_${fmtLogTime(Date.now()).replace(" ", "_").replace(":", "")}.xlsx`;   // ..._2026-11-12_1430.xlsx
 }
 
 async function writeToHandle(handle, blob) {
@@ -1668,7 +1646,7 @@ function scheduleAutoSave() {
 const changedTemplates = () => Object.fromEntries(TABS.map(tab =>
   [tab, Object.fromEntries(Object.entries(settings.tpl[tab]).filter(([k, v]) => v !== DEF_TPL[tab][k]))]));
 const settingsSnapshot = () => ({ me: settings.me, lastFy: settings.lastFy, thisFy: settings.thisFy, deadline: settings.deadline,
-  medLink: settings.medLink, tpl: changedTemplates() });
+  tpl: changedTemplates() });
 
 // Takes only known keys and templates, so old or foreign data can't break anything.
 // A stored copy of an earlier default wording is dropped (it was saved before only changes were stored).
@@ -1702,7 +1680,7 @@ function settingsChanged() {
   dataChanged({ soon: true });
 }
 
-const PLACEHOLDER = /\{(name|me|lastFY|thisFY|deadline|result|nsfit|fit|medLink)\}/g;
+const PLACEHOLDER = /\{(name|me|lastFY|thisFY|deadline|result|nsfit|fit)\}/g;
 // "TAN WEI MING" / "tan wei ming" -> "Tan Wei Ming"; "MUHAMMAD BIN ISMAIL" -> "Muhammad bin Ismail", "KUMAR S/O RAJ" -> "Kumar s/o Raj".
 // "WEE,VINCENT" -> "Wee, Vincent"; "D'SOUZA" -> "D'Souza" but "RUI'EN" -> "Rui'en" (pinyin apostrophe).
 const NAME_PARTICLES = new Set(["bin", "binti", "binte", "bte", "bt", "s/o", "d/o", "a/l", "a/p"]);
@@ -1715,7 +1693,7 @@ const properName = s => s.toLowerCase().replace(/,(?=\S)/g, ", ").split(/(\s+)/)
 function fillTemplate(tpl, rec) {
   const values = {
     name: properName(rec.name), me: settings.me.trim(), lastFY: settings.lastFy, thisFY: settings.thisFy, deadline: settings.deadline.trim(),
-    result: resultText(cellOf(rec, cols.thisFy)), nsfit: cellOf(rec, cols.nsfit), fit: fitText(rec), medLink: settings.medLink.trim(),
+    result: resultText(cellOf(rec, cols.thisFy)), nsfit: cellOf(rec, cols.nsfit), fit: fitText(rec),
   };
   if (!values.me) tpl = tpl.replaceAll(", this is {me}", "");
   // a line whose placeholder is empty for this person is left out (no NSFIT count, no link set...)
@@ -1728,8 +1706,8 @@ function fillTemplate(tpl, rec) {
 function waLink(rec, msg = "") {
   const text = msg ? encodeURIComponent(msg) : "";
   return settings.openIn === "app"
-    ? `whatsapp://send?phone=${COUNTRY_CODE}${rec.phoneNorm}${text ? "&text=" + text : ""}`
-    : `https://wa.me/${COUNTRY_CODE}${rec.phoneNorm}${text ? "?text=" + text : ""}`;
+    ? `whatsapp://send?phone=${intlPhone(rec)}${text ? "&text=" + text : ""}`
+    : `https://wa.me/${intlPhone(rec)}${text ? "?text=" + text : ""}`;
 }
 
 const templateFor = (rec, tab) => settings.tpl[tab][statusOf(rec, tab)];
@@ -1754,9 +1732,10 @@ function dataChanged({ soon = false, sentTo = null } = {}) {
 // Only the tab on screen is redrawn; the other is redrawn when it is opened (showTab).
 function renderVisibleTab() {
   clearTimeout(renderTimer);
-  if ($("tabRemind").hidden) { renderStats(); renderRoster(); }
+  if ($("tabRemind").hidden) renderFind();
   else renderRemindKeepScroll();
 }
+const renderFind = () => { renderStats(); renderRoster(); };
 
 // Fresh state for a newly loaded file.
 function resetViews() {
@@ -1786,7 +1765,7 @@ function showTab(which) {
   $("tabBtnRemind").setAttribute("aria-selected", remind);
   clearTimeout(renderTimer);
   if (remind) renderRemind();
-  else { renderStats(); renderRoster(); }
+  else renderFind();
 }
 
 /* =====================================================================
@@ -1816,7 +1795,7 @@ function renderSuggestions(box) {
   box.active = box.items.length ? 0 : -1;
   box.list.innerHTML = box.items.length
     ? box.items.map((m, i) => `<div class="opt${i === 0 ? " active" : ""}" data-i="${i}">
-        ${codeBadge(PRIORITY[priorityOf(m.rec)].color)}<span class="main">${box.main(m.rec, q)}</span><span class="sub">${box.sub(m.rec)}</span>
+        ${statusBar(priorityColor(m.rec))}<span class="main">${box.main(m.rec, q)}</span><span class="sub">${box.sub(m.rec)}</span>
         ${m.fuzzy ? '<span class="tag">~ CLOSE</span>' : ""}</div>`).join("")
     : `<div class="none">No match found. Check spelling or digits.</div>`;
   box.list.classList.add("open");
@@ -1864,17 +1843,18 @@ document.querySelectorAll("[data-clear]").forEach(btn => btn.addEventListener("c
    17. FIND OFFICER TAB: result ticket + editing
    ===================================================================== */
 function fieldHtml(rec, col) {
-  const value = rec.raw[col] || "";
+  const value = rec.raw[col] || "", cell = cellOf(rec, col);
   // Highlighted in the status colour: this FY's IPPT result, and NSFIT Attended for people on the NSFIT track
-  const result = hasIpptData() && (col === cols.thisFy || col === cols.nsfit && NSFIT_TRACK.includes(ipptStatus(rec)));
-  const words = col === cols.thisFy && cellOf(rec, col) ? resultText(cellOf(rec, col)) : "";
-  const shown = col === cols.phone ? fmtPhone(rec.phoneNorm || value)
-    : words && words !== cellOf(rec, col) ? `${value} (${words})`                          // "FL" -> "FL (Fail)"
-    : result && col === cols.nsfit ? `${cellOf(rec, col) || 0} / ${NSFIT_SESSIONS} sessions` : value;
+  const ipptNow = col === cols.thisFy || col === cols.nsfit ? (hasIpptData() ? ipptStatus(rec) : "") : "";
+  const isNsfit = col === cols.nsfit && NSFIT_TRACK.includes(ipptNow);
+  const status = col === cols.thisFy || isNsfit ? ipptNow : "";
+  let shown = value;
+  if (col === cols.phone) shown = fmtPhone(rec.phoneNorm || value);
+  else if (col === cols.thisFy && resultText(cell) !== cell) shown = `${value} (${resultText(cell)})`;   // "FL" -> "FL (Fail)"
+  else if (isNsfit) shown = `${cell || 0} / ${NSFIT_SESSIONS} sessions`;
   const editable = isEditable(rec, col);
   const edited = value !== (savedRows[rec.idx][col] || "");
-  const kind = col === cols.name ? " primary" : col === cols.phone ? " phone" : result ? " result" : "";
-  const status = result ? ipptStatus(rec) : "";
+  const kind = col === cols.name ? " primary" : col === cols.phone ? " phone" : status ? " result" : "";
   return `<div class="field${kind}${editable ? " editable" : ""}${edited ? " edited" : ""}" data-col="${col}"${status ? ` style="--c:${STATUS_COLOR[status]}"` : ""}>
     <div class="k">${esc(headers[col])}${status ? `<span class="st">${esc(status)}</span>` : ""}${edited ? '<span class="ed-tag">EDITED</span>' : ""}${editable ? '<span class="pen">&#9998;</span>' : ""}</div>
     <div class="v${shown ? "" : " empty"}">${shown ? esc(shown) : "-"}</div></div>`;
@@ -1883,7 +1863,7 @@ function fieldHtml(rec, col) {
 // quiet = redraw in place without the pop-in animation and scroll
 function showResult(rec, quiet = false) {
   selected = rec;
-  const color = PRIORITY[priorityOf(rec)].color;
+  const color = priorityColor(rec);
   $("resCode").style.background = color;
   $("resTitle").style.background = color;
   $("resName").textContent = rec.name || "(no name)";
@@ -1929,7 +1909,7 @@ $("fields").addEventListener("click", e => {
 });
 $("copyPhone").addEventListener("click", async () => {
   if (!selected) return;
-  const num = "+" + COUNTRY_CODE + selected.phoneNorm;
+  const num = "+" + intlPhone(selected);
   try { await navigator.clipboard.writeText(num); toast("Copied " + num); }
   catch { toast("Copy blocked by browser"); }
 });
@@ -1950,14 +1930,14 @@ function statBox(title, color, cleared, total, note) {
 
 function renderStats() {
   if (!records.length) return;
-  const total = records.length;
-  const ippt = hasIpptData() ? records.filter(ipptCleared).length : 0;
-  const shoot = hasShootData() ? records.filter(shootCleared).length : 0;
+  const total = records.length, hasI = hasIpptData(), hasS = hasShootData();
+  const ippt = hasI ? records.filter(ipptCleared).length : 0;
+  const shoot = hasS ? records.filter(shootCleared).length : 0;
   $("stats").innerHTML =
-    statBox("IPPT", "var(--ewl)", ippt, hasIpptData() ? total : 0, hasIpptData()
+    statBox("IPPT", "var(--ewl)", ippt, hasI ? total : 0, hasI
       ? `cleared (passed ${esc(settings.thisFy)} or not eligible) &middot; ${total - ippt} outstanding`
       : "No IPPT columns in this sheet") +
-    statBox("SHOOTING", "var(--dtl)", shoot, hasShootData() ? total : 0, hasShootData()
+    statBox("SHOOTING", "var(--dtl)", shoot, hasS ? total : 0, hasS
       ? `attempted &middot; ${total - shoot} not attempted`
       : "No shooting column in this sheet");
 }
@@ -1968,13 +1948,14 @@ function rosterRowHtml(rec, priority) {
     hasShootData() ? statusPill(shootStatus(rec), "Shoot: ") : "",
   ].join("");
   return `<div class="ro p${priority}" data-idx="${rec.idx}">
-    ${codeBadge(PRIORITY[priority].color)}<span class="nm">${esc(rec.name)}</span><span class="ph">${esc(displayPhone(rec))}</span>${pills}</div>`;
+    ${statusBar(PRIORITY[priority].color)}<span class="nm">${esc(rec.name)}</span><span class="ph">${esc(displayPhone(rec))}</span>${pills}</div>`;
 }
 
+const byName = new Intl.Collator();
 function renderRoster() {
   if (!records.length) return;
   const list = records.map(rec => ({ rec, priority: priorityOf(rec) }))
-    .sort((a, b) => a.priority - b.priority || a.rec.name.localeCompare(b.rec.name));
+    .sort((a, b) => a.priority - b.priority || byName.compare(a.rec.name, b.rec.name));
   const counts = PRIORITY.map((_, p) => list.filter(x => x.priority === p).length);
   $("rosterChips").innerHTML = chipsHtml([
     { value: "ALL", label: "All", count: list.length },
@@ -2031,7 +2012,6 @@ function syncRemindControls() {
   $("subIppt").classList.toggle("active", tab === "ippt");
   $("subShoot").classList.toggle("active", tab === "shoot");
   document.querySelectorAll(".rm-ippt").forEach(e => e.hidden = tab !== "ippt");
-  document.querySelectorAll(".rm-shoot").forEach(e => e.hidden = tab !== "shoot");
   for (const [k, id] of Object.entries(SETTING_INPUTS)) if (document.activeElement !== $(id)) $(id).value = settings[k];
   $("rmOpenIn").checked = settings.openIn === "app";
   $("rmGroup").value = view.group;
@@ -2053,15 +2033,14 @@ function remindRowHtml({ rec, status }, tab) {
     <a class="btn small green send" href="${esc(waLink(rec))}" target="spf_wa">${at ? "Resend" : "Send"}</a>`;   // message added on tap (rmList click)
 
   const context = tab === "ippt"
-    ? [cols.lastFy >= 0 && `${settings.lastFy}: ${cellOf(rec, cols.lastFy) || "-"}`,
-       cols.thisFy >= 0 && `${settings.thisFy}: ${resultText(cellOf(rec, cols.thisFy)) || "-"}`,
+    ? [cols.thisFy >= 0 && `${settings.thisFy}: ${resultText(cellOf(rec, cols.thisFy)) || "-"}`,
        cols.track >= 0 && cellOf(rec, cols.track).replace(/^\d+\s*-\s*/, ""),          // "9002 - RT/MANDATORY" -> "RT/MANDATORY"
        cellOf(rec, cols.nsfit) && `NSFIT attended: ${cellOf(rec, cols.nsfit)}`]
     : [`Shooting: ${cellOf(rec, cols.shoot) || "-"}`];
   if (cols.group >= 0 && view.group === "ALL") context.push(cellOf(rec, cols.group));
   const remark = cellOf(rec, cols.remarks);
   return `<div class="rm-row${at ? " sent" : ""}" data-idx="${rec.idx}">
-    ${codeBadge(STATUS_COLOR[status])}
+    ${statusBar(STATUS_COLOR[status])}
     <span class="nm">${esc(rec.name)}<span class="ctx">${esc(context.filter(Boolean).join(" · "))}${remark ? `<br>&#8220;${esc(remark)}&#8221;` : ""}</span></span>
     <span class="ph">${esc(displayPhone(rec))}</span>
     ${statusPill(status)}
@@ -2075,7 +2054,7 @@ function renderRemind() {
   renderBatch();
   if (!hasTabData(tab)) {
     $("rmChips").innerHTML = ""; $("rmProgress").textContent = "";
-    $("rmList").innerHTML = `<div class="empty">No ${tab === "ippt" ? "IPPT track or FY result" : "shooting"} column found in the sheet.</div>`;
+    $("rmList").innerHTML = `<div class="empty">No ${tab === "ippt" ? "IPPT Rs or VFIT/MFIT" : "shooting"} column found in the sheet.</div>`;
     return;
   }
 
@@ -2168,7 +2147,7 @@ $("rmList").addEventListener("click", e => {
 });
 
 /* ---------- batch send: one tap per person, capped, with a cool-down ---------- */
-const cooldownLeftMs = () => batch.endedAt ? COOLDOWN_HOURS * 3600000 - (Date.now() - batch.endedAt) : 0;
+const cooldownLeftMs = () => batch.endedAt ? COOLDOWN_MS - (Date.now() - batch.endedAt) : 0;
 const batchActive = () => batch.queue.length > 0 && batch.tab === view.tab;
 
 function startBatch() {
@@ -2178,9 +2157,7 @@ function startBatch() {
   if (cooldownLeftMs() > 0) {
     if (!confirm(`Your last batch ended ${fmtWhen(batch.endedAt)}. Wait 1-2 days between batches so WhatsApp doesn't flag your number. Start anyway?`)) return;
   }
-  const usesLink = Object.values(settings.tpl[tab]).some(t => t.includes("{medLink}"));
-  const blank = [!settings.me.trim() && "Your name", usesLink && !settings.medLink.trim() && "Medical review link"].filter(Boolean);
-  if (blank.length && !confirm(`Blank: ${blank.join(", ")}. Messages will go out without it. Start anyway?`)) return;
+  if (!settings.me.trim() && !confirm("Blank: Your name. Messages will go out without it. Start anyway?")) return;
   const queue = remindItems(tab)
     .filter(i => (view.filter === "ALL" || i.status === view.filter) && stillToSend(i.rec, tab))
     .slice(0, size).map(i => i.rec);
@@ -2213,7 +2190,7 @@ function renderBatch() {
   if (!batchActive()) {
     const left = cooldownLeftMs();
     panel.hidden = left <= 0;
-    if (left > 0) panel.innerHTML = `<div class="bp-done">&#10003; Batch done. Next batch after <b>${esc(fmtWhen(batch.endedAt + COOLDOWN_HOURS * 3600000))}</b> to avoid WhatsApp spam flags.</div>`;
+    if (left > 0) panel.innerHTML = `<div class="bp-done">&#10003; Batch done. Next batch after <b>${esc(fmtWhen(batch.endedAt + COOLDOWN_MS))}</b> to avoid WhatsApp spam flags.</div>`;
     return;
   }
   const rec = batch.queue[batch.pos];
