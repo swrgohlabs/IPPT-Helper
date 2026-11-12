@@ -89,6 +89,10 @@
   .sign h1 { margin: 0; font-size: 26px; letter-spacing: 2px; text-transform: uppercase; }
   .sign small { display: block; color: var(--muted); font-size: 12px; letter-spacing: 1px; }
   .sign .spacer { flex: 1; }
+  /* departure board (renderBoard): static one-line LED sign; shrinks instead of wrapping, hidden on narrow screens */
+  .board { flex: 1 1 0; min-width: 0; max-width: 340px; background: #000; color: #ffd400; border: var(--px) solid #000; box-shadow: inset 0 0 0 2px #333;
+    padding: 6px 10px; font-size: 13px; line-height: 16px; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 760px) { .board { display: none; } }
   .code-badge { display: flex; border: var(--px) solid #000; }
   .code-badge b { padding: 4px 10px; color: #fff; font-size: 18px; }
 
@@ -103,6 +107,22 @@
   @keyframes run { from { transform: translateX(-220px); } to { transform: translateX(100cqw); } }
   @media (prefers-reduced-motion: reduce) { .train { animation: none; transform: translateX(16px); } .blink { animation: none; } }
   .train svg { display: block; shape-rendering: crispEdges; }
+  /* arrival after a file loads (body.arrive, then .depart; see arrive()): train stops centred, lamp flashes twice,
+     panels drop in one after another (titles and stat boxes only, never the long lists), then the train leaves and the loop resumes */
+  .arrive-sign { margin-left: auto; min-width: 0; background: #000; color: #ffe27a; padding: 2px 8px; font-size: 12px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    body.arrive .train { animation: arrive .9s steps(30) forwards; }
+    body.arrive.depart .train { animation: depart .8s steps(24) forwards; }
+    body.arrive .lamp { animation: blink .25s steps(2) .9s 2; }
+    body.arrive .arrive-sign { opacity: 1; }
+    body.arrive.depart .arrive-sign { animation: blink .4s steps(2) 2; }
+    body.arrive .loader-panel .panel-title { animation: pop .25s steps(4) .2s both; }
+    body.arrive .tabs { animation: pop .25s steps(4) .35s both; }
+    body.arrive .stats { animation: pop .25s steps(4) .5s both; }
+    body.arrive .tabpage .panel-title { animation: pop .25s steps(4) .65s both; }
+  }
+  @keyframes arrive { from { transform: translateX(-220px); } to { transform: translateX(calc(50cqw - 110px)); } }
+  @keyframes depart { from { transform: translateX(calc(50cqw - 110px)); } to { transform: translateX(100cqw); } }
 
   /* ---------- panels ---------- */
   .panel { background: var(--panel); border: var(--px) solid #000; box-shadow: 8px 8px 0 #000; margin-top: 28px; position: relative; }
@@ -172,8 +192,27 @@
 
   /* ---------- result ticket + field editing ---------- */
   #result { display: none; }
-  #result.show { display: block; animation: pop .25s steps(4); }
+  #result.show { display: block; animation: flip .3s steps(6); transform-origin: top; }
   @keyframes pop { from { transform: translateY(12px); opacity: 0; } }
+  @keyframes flip { from { transform: perspective(900px) rotateX(-70deg); opacity: 0; } }
+  @keyframes fade { from { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { #result.show { animation: fade .2s steps(3); } }
+  /* boarding pass: coloured stub (status written sideways), perforation, main part, decorative barcode */
+  .pass { display: flex; }
+  .pass-main { flex: 1; min-width: 0; }
+  .stub { position: relative; flex: none; width: 52px; display: flex; justify-content: center; gap: 4px; padding: 14px 4px 14px 0; background: var(--c, var(--ewl)); color: #fff; }
+  .stub::after { content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 4px; background: repeating-linear-gradient(#000 0 4px, var(--panel) 4px 8px); }
+  .stub span { writing-mode: vertical-rl; transform: rotate(180deg); text-transform: uppercase; letter-spacing: 2px; white-space: nowrap; }
+  .stub-k { font-size: 11px; opacity: .8; }
+  .stub-v { font-size: 15px; }
+  .barcode { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding: 0 16px 14px; font-size: 10px; letter-spacing: 1px; color: var(--muted); }
+  .barcode i { width: 168px; height: 26px; background: repeating-linear-gradient(90deg, #000 0 2px, transparent 2px 4px, #000 4px 8px, transparent 8px 10px, #000 10px 11px, transparent 11px 14px, #000 14px 17px, transparent 17px 20px); }
+  @media (max-width: 520px) {
+    .pass { flex-direction: column; }
+    .stub { width: auto; flex-direction: column; align-items: center; padding: 6px 12px 10px; }
+    .stub::after { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 4px; background: repeating-linear-gradient(90deg, #000 0 4px, var(--panel) 4px 8px); }
+    .stub span { writing-mode: horizontal-tb; transform: none; }
+  }
   .ticket-head { display: flex; align-items: center; gap: 14px; padding: 16px; background: #fff; border-bottom: var(--px) solid #000; flex-wrap: wrap; }
   .ticket-bar { width: 18px; height: 44px; border: var(--px) solid #000; box-shadow: 4px 4px 0 #000; }
   .ticket-head h2 { margin: 0; font-size: 24px; flex: 1; min-width: 200px; word-break: break-word; }
@@ -245,6 +284,12 @@
   .bp-head { letter-spacing: 2px; color: var(--nel); }
   .bp-meter { height: 12px; border: 3px solid #000; margin: 8px 0; background: #eee; }
   .bp-meter i { display: block; height: 100%; background: var(--ewl); }
+  /* send tap feedback: stamped "Sent" label, SENT count bump (JS adds the classes on the tap) */
+  .rm-row.just-sent .when { display: inline-block; border: 2px solid var(--ccl); padding: 0 6px; animation: stamp .2s steps(3) both; }
+  #rmProgress b.bump { display: inline-block; animation: bump .25s steps(3); }
+  @keyframes stamp { from { transform: scale(1.4); opacity: 0; } }
+  @keyframes bump { 50% { transform: translateY(-4px) scale(1.25); } }
+  @media (prefers-reduced-motion: reduce) { .rm-row.just-sent .when, #rmProgress b.bump { animation: none; } }
   .bp-next { margin-bottom: 10px; font-size: 17px; }
   .bp-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .bp-done { color: var(--ewl); }
@@ -268,6 +313,8 @@
   body.dragging .dropzone { background: #ffd6cc; border-style: solid; }
   .dz-big { font-size: 20px; letter-spacing: 2px; color: var(--nsl); text-transform: uppercase; }
   .dz-or { margin: 8px 0; color: var(--muted); font-size: 12px; }
+  .dz-busy { margin-bottom: 12px; }
+  body:not(.boarding) .dz-busy, body.boarding .dropzone .desk { display: none; }   /* while a file is being read */
   .howto { text-align: left; margin: 16px 0 6px; padding-left: 22px; font-size: 13px; line-height: 1.5; }
   .howto-note { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
   .dz-sub { margin-top: 12px; font-size: 12px; color: var(--muted); }
@@ -282,7 +329,20 @@
     transition: transform .15s steps(3); z-index: 120;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
+  /* ---------- LINE CLEARED confetti (lineCleared): one fixed layer, 8px squares, transform + opacity only ---------- */
+  .confetti { position: fixed; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 130; }
+  .confetti i { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border: 2px solid #000; box-sizing: border-box; animation: confetti-fly 1.2s steps(12) forwards; }
+  @keyframes confetti-fly { to { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+  /* ---------- end confetti ---------- */
   footer { text-align: center; color: #8a8fb8; font-size: 12px; margin-top: 36px; letter-spacing: 1px; }
+
+  /* ---------- Look switches + CRT ---------- */
+  /* Look switches in the footer (Sound, CRT); reuse .switch */
+  .look { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .look .rm-f { align-items: center; }
+  /* CRT look (body.crt, off by default): static scanlines + faint vignette over everything; no animation, never takes clicks */
+  body.crt::after { content: ""; position: fixed; inset: 0; z-index: 140; pointer-events: none;
+    background: repeating-linear-gradient(rgba(0, 0, 0, .06) 0 2px, transparent 2px 4px), radial-gradient(transparent 60%, rgba(0, 0, 0, .25)); }
 
   /* ---------- phones ---------- */
   /* form text of 16px or more stops iPhones zooming in when a field is tapped (same specificity, so this rule wins by order) */
@@ -302,6 +362,7 @@
       <small>WHATSAPP GROUP DIRECTORY &middot; COMMANDING OFFICERS</small>
     </div>
     <div class="spacer"></div>
+    <div class="board" id="board" title="Departure board">No train &middot; load an Excel</div>
     <div class="code-badge" aria-hidden="true">
       <b style="background:var(--nsl)">NS</b><b style="background:var(--ewl)">EW</b><b style="background:var(--nel)">NE</b><b style="background:var(--ccl)">CC</b><b style="background:var(--dtl)">DT</b><b style="background:var(--tel)">TE</b>
     </div>
@@ -322,7 +383,7 @@
           <rect x="19" y="2" width="6" height="3"/><rect x="27" y="2" width="6" height="3"/>
           <rect x="35" y="2" width="6" height="3"/><rect x="43" y="2" width="6" height="3"/>
         </g>
-        <rect x="52" y="1" width="3" height="4" fill="#ffe27a"/>
+        <rect class="lamp" x="52" y="1" width="3" height="4" fill="#ffe27a"/>
         <rect x="4" y="8" width="4" height="2" fill="#000"/><rect x="14" y="8" width="4" height="2" fill="#000"/>
         <rect x="37" y="8" width="4" height="2" fill="#000"/><rect x="47" y="8" width="4" height="2" fill="#000"/>
       </svg>
@@ -331,7 +392,7 @@
 
   <!-- YOUR DATA -->
   <section class="panel loader-panel">
-    <div class="panel-title" style="background:var(--dtl)"><span class="dot"></span>Your Data</div>
+    <div class="panel-title" style="background:var(--dtl)"><span class="dot"></span>Your Data<span class="arrive-sign" id="arriveSign" aria-hidden="true"></span></div>
     <div class="panel-body">
       <div class="loader">
         <div class="status">
@@ -383,16 +444,22 @@
 
     <section class="panel" id="result">
       <div class="panel-title" id="resTitle" style="background:var(--ewl)"><span class="dot"></span>Now Arriving</div>
-      <div class="ticket-head">
-        <div class="ticket-bar" id="resCode"></div>
-        <h2 id="resName"></h2>
-        <div class="actions">
-          <button class="btn small green" id="copyPhone">Copy HP</button>
-          <button class="btn small" id="openWa">Open WhatsApp</button>
+      <div class="pass">
+        <div class="stub" id="resStub"><span class="stub-k" id="resStubK"></span><span class="stub-v" id="resStubV"></span></div>
+        <div class="pass-main">
+          <div class="ticket-head">
+            <div class="ticket-bar" id="resCode"></div>
+            <h2 id="resName"></h2>
+            <div class="actions">
+              <button class="btn small green" id="copyPhone">Copy HP</button>
+              <button class="btn small" id="openWa">Open WhatsApp</button>
+            </div>
+          </div>
+          <div class="hint ticket-hint">Click a field to edit.</div>
+          <div class="fields" id="fields"></div>
+          <div class="barcode" aria-hidden="true"><i></i><span id="resBarcode"></span></div>
         </div>
       </div>
-      <div class="hint ticket-hint">Click a field to edit.</div>
-      <div class="fields" id="fields"></div>
     </section>
 
     <section class="panel">
@@ -454,7 +521,16 @@
     </section>
   </div>
 
-  <footer>MIND THE GAP <span class="blink">_</span></footer>
+  <footer>
+    <div class="look">
+      <div class="rm-f">Sound
+        <label class="switch"><input id="lookSound" type="checkbox" role="switch" aria-label="Sound">
+<i></i><span class="sw-web">Off</span><span class="sw-app">On</span></label></div>
+      <div class="rm-f">CRT look
+        <label class="switch"><input id="lookCrt" type="checkbox" role="switch" aria-label="CRT look">
+<i></i><span class="sw-web">Off</span><span class="sw-app">On</span></label></div>
+    </div>
+    MIND THE GAP <span class="blink">_</span></footer>
 </div>
 
 <!-- SAVE BAR: shows whenever there are updates not yet in the Excel -->
@@ -473,6 +549,7 @@
       <div class="roundel">TRANSCOM</div>
       <h2>Tap in to start</h2>
             <div class="dropzone">
+        <div class="dz-big dz-busy"><span class="blink">Doors closing...</span></div>
         <div class="dz-big desk">&#8681; Drag your Excel file here</div>
         <div class="desk dz-or">or</div>
         <button class="btn big" id="gatePick">Choose Excel file</button>
@@ -519,7 +596,8 @@ const TABS = ["ippt", "shoot"];
 const TAB_LABEL = { ippt: "IPPT", shoot: "Shooting" };
 const LOG_COLS = { ippt: "IPPT reminder sent", shoot: "Shooting reminder sent" };   // added to the exported Excel
 const META_SHEET = "_SPF";                                                          // hidden sheet: save time + settings
-const STORE = { actions: "spf.actions.v1", edits: "spf.edits.v1", settings: "spf.remind.v1", batchEnded: "spf.batch.v1" };
+const STORE = { actions: "spf.actions.v1", edits: "spf.edits.v1", settings: "spf.remind.v1", batchEnded: "spf.batch.v1",
+  look: "spf.look.v1" };   // device-only look switches (sound, CRT), never in the saved Excel
 const HP_LENGTH = 8, COUNTRY_CODE = "65";            // Singapore mobile numbers
 const NO_COL = -1;                         // column not in the sheet
 const NSFIT_SESSIONS = 9;                  // failing IPPT after this many NSFIT sessions meets the requirement
@@ -1290,14 +1368,18 @@ async function openSheets(sheetList, label, meta, isDemo) {
 
 async function handleFile(file) {
   if (!$("conflict").hidden) { toast("First choose Keep or Use file in the popup"); return; }   // the popup belongs to the current load
+  setBoarding(true);
   try {
     const { sheets, meta } = await readFileAsSheets(file);
+    setBoarding(false);                          // before the outdated-file popup, which waits for the CO
     await openSheets(sheets, file.name, meta, false);
     toast(`Loaded ${records.length} records` + (sourceSheets.length > 1 ? ` from ${sourceSheets.length} sheets` : ""));
   } catch (e) {
     const msg = `<span class="warn">ERROR</span> ${esc(e.message || e)}`;
     $("gateErr").innerHTML = msg;
     $("status").innerHTML = msg;
+  } finally {
+    setBoarding(false);
   }
 }
 
@@ -1740,6 +1822,7 @@ const renderFind = () => { renderStats(); renderRoster(); };
 function resetViews() {
   Object.assign(view, { filter: "ALL", group: "ALL", rosterFilter: "ALL" });
   batch.queue = [];
+  for (const k in lineSeen) delete lineSeen[k];   // new file: seed the "line cleared" state without firing
   undoStack.length = 0;
   fillRemindSelects();
   $("rmTemplates").dataset.tab = "";
@@ -1750,8 +1833,68 @@ function resetViews() {
   renderVisibleTab();
 }
 
+/* =====================================================================
+   15b. EFFECTS (transform / opacity only, pixel steps; none when the device asks for reduced motion)
+   ===================================================================== */
+const motionOK = () => !matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Train arrival after a file loads: drives the CSS under body.arrive. Stops centred, holds, then departs (.depart, 0.8 s);
+// the normal loop resumes after that. Timers, not animationend: they also finish when animations are paused. Never blocks input.
+let arriveTimer = 0;
+function arrive() {
+  const body = document.body;
+  clearTimeout(arriveTimer);
+  body.classList.remove("arrive", "depart");
+  sound.arrive();
+  if (!motionOK()) return;
+  $("arriveSign").textContent = `Now arriving · ${demoMode ? "sample data" : fileName} · ${records.length.toLocaleString()} pax`;
+  void body.offsetWidth;                       // restart the animations if a file loads during an arrival
+  body.classList.add("arrive");
+  arriveTimer = setTimeout(() => {
+    body.classList.add("depart");
+    arriveTimer = setTimeout(() => body.classList.remove("arrive", "depart"), 800);
+  }, 2300);
+}
+
+// Look switches (footer): both off by default, kept on this device only (also with sample data: a preference, not data).
+const savedLook = store.load(STORE.look, {});
+const look = { sound: savedLook?.sound === true, crt: savedLook?.crt === true };
+const saveLook = () => store.save(STORE.look, { sound: look.sound, crt: look.crt });
+
+// Chiptune blips: square-wave beeps, no audio files. The AudioContext is made only when a sound plays with the
+// switch on, normally inside a click (switch, Send), so nothing autoplays. If the browser has had no click yet the sound
+// stays silent (e.g. the arrival chime after a drag-drop). Any failure is silent.
+let audioCtx = null;
+function beep(notes) {   // notes: [[Hz, start s, length s], ...]
+  if (!look.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    const t0 = audioCtx.currentTime;
+    for (const [hz, at, len] of notes) {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = "square"; osc.frequency.value = hz;
+      gain.gain.setValueAtTime(0.06, t0 + at);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + at + len);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0 + at); osc.stop(t0 + at + len);
+    }
+  } catch {}
+}
+const sound = {
+  send: () => beep([[1320, 0, 0.04]]),
+  cleared: () => beep([[523, 0, 0.08], [659, 0.08, 0.08], [784, 0.16, 0.08], [1047, 0.24, 0.16]]),
+  arrive: () => beep([[880, 0, 0.18], [659, 0.2, 0.3]]),   // generic two-tone, not the real SMRT chime
+};
+
+// While a file is being read: "Doors closing" on the start popup, load buttons off.
+function setBoarding(on) {
+  document.body.classList.toggle("boarding", on);
+  $("gatePick").disabled = $("pick").disabled = on;
+}
+
 /* ---------- gate + tabs ---------- */
-function closeGate() { $("gate").hidden = true; document.body.classList.remove("gated"); }
+function closeGate() { $("gate").hidden = true; document.body.classList.remove("gated"); arrive(); }
 function openGate() { $("gate").hidden = false; document.body.classList.add("gated"); $("gateErr").textContent = ""; }
 
 function showTab(which) {
@@ -1866,13 +2009,19 @@ function showResult(rec, quiet = false) {
   $("resCode").style.background = color;
   $("resTitle").style.background = color;
   $("resName").textContent = rec.name || "(no name)";
+  // stub: IPPT status in its colour (as on the IPPT Rs box), else the list group
+  const ippt = hasIpptData() ? ipptStatus(rec) : "";
+  $("resStub").style.setProperty("--c", ippt ? STATUS_COLOR[ippt] : color);
+  $("resStubK").textContent = ippt ? "IPPT" : "";
+  $("resStubV").textContent = ippt || PRIORITY[priorityOf(rec)].label;
+  $("resBarcode").textContent = ["TRS", "COMMAND LINK", settings.thisFy].filter(Boolean).join(" · ");
   $("fields").innerHTML = headers.map((_, col) => fieldHtml(rec, col)).join("");
   $("openWa").hidden = !hasValidHp(rec);
   $("copyPhone").hidden = !rec.phoneNorm;
   if (quiet) return;
   const el = $("result");
-  el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
-  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");   // card flips in again for each person
+  el.scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "nearest" });
 }
 function hideResult() { $("result").classList.remove("show"); selected = null; }
 
@@ -1919,6 +2068,40 @@ $("openWa").addEventListener("click", () => {
 /* =====================================================================
    18. FIND OFFICER TAB: stat boxes + full list
    ===================================================================== */
+// "Line cleared": 48 pixel squares in the six MRT line colours burst from anchorEl for 1.2 s, then are removed.
+// Reduced motion: only the toast. Callers decide when to fire (crossings only, see lineCrossed).
+function lineCleared(anchorEl, label) {
+  toast(label);
+  sound.cleared();
+  if (!motionOK() || !anchorEl) return;
+  const r = anchorEl.getBoundingClientRect();
+  const colors = ["--nsl", "--ewl", "--nel", "--ccl", "--dtl", "--tel"];
+  const layer = document.createElement("div");
+  layer.className = "confetti";
+  layer.style.transform = `translate(${r.left + r.width / 2}px, ${r.top + r.height / 2}px)`;
+  for (let n = 0; n < 48; n++) {
+    const sq = document.createElement("i");
+    sq.style.background = `var(${colors[n % 6]})`;
+    sq.style.setProperty("--dx", `${Math.round((Math.random() - 0.5) * 360)}px`);
+    sq.style.setProperty("--dy", `${Math.round(Math.random() * 220 - 60)}px`);
+    layer.appendChild(sq);
+  }
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 1500);
+}
+
+// Remembers whether each target was already complete; true only when it just became complete.
+// A target seen for the first time (file load, new filter) is recorded without firing; resetViews clears it.
+const lineSeen = {};
+function lineCrossed(key, complete) {
+  const was = lineSeen[key];
+  lineSeen[key] = complete;
+  return was === false && complete;
+}
+
+// Header departure board: one static line for the tab on screen, set where its numbers are drawn (renderStats, renderProgress).
+const renderBoard = text => { $("board").textContent = text; };
+
 function statBox(title, color, cleared, total, note) {
   const pct = total ? Math.round((cleared / total) * 100) : 0;
   return `<div class="stat"><div class="k" style="background:${color}">${title}</div>
@@ -1939,6 +2122,11 @@ function renderStats() {
     statBox("SHOOTING", "var(--dtl)", shoot, hasS ? total : 0, hasS
       ? `attempted &middot; ${total - shoot} not attempted`
       : "No shooting column in this sheet");
+  renderBoard(`${total.toLocaleString()} pax · ` + (!hasI ? "no IPPT column"
+    : ippt === total ? "IPPT all clear" : `next: ${(total - ippt).toLocaleString()} IPPT outstanding`));
+  const [bi, bs] = $("stats").children;
+  if (lineCrossed("stat|IPPT", hasI && ippt === total)) lineCleared(bi, "LINE CLEARED: IPPT 100%");
+  if (lineCrossed("stat|SHOOT", hasS && shoot === total)) lineCleared(bs, "LINE CLEARED: SHOOTING 100%");
 }
 
 function rosterRowHtml(rec, priority) {
@@ -2071,22 +2259,27 @@ function renderRemind() {
   $("rmList").innerHTML = shown.length ? shown.map(i => remindRowHtml(i, tab)).join("") : `<div class="empty">Nobody here.</div>`;
 }
 
-function renderProgress(items, tab) {
+function renderProgress(items, tab, bump = false) {
   const sendable = items.filter(i => canSend(i.rec, tab));
   const sent = sendable.filter(i => sentAt(i.rec, tab)).length;
   const noHp = items.filter(i => settings.tpl[tab][i.status] && !hasValidHp(i.rec)).length;
   const unclear = items.filter(i => i.status === "Unclear").length;
-  $("rmProgress").innerHTML = `SENT <b>${sent}</b> / ${sendable.length}` +
+  $("rmProgress").innerHTML = `SENT <b${bump ? ' class="bump"' : ""}>${sent}</b> / ${sendable.length}` +
     (noHp ? ` &middot; <span class="warn">${noHp} without a valid HP</span>` : "") +
     (unclear ? ` &middot; <span class="warn">${unclear} unclear</span>` : "");
+  renderBoard(`${tab === "ippt" ? "IPPT" : "Shooting"} · sent ${sent.toLocaleString()} / ${sendable.length.toLocaleString()}`);
+  if (lineCrossed(`send|${tab}|${view.group}|${view.filter}`, sendable.length > 0 && sent === sendable.length)) lineCleared($("rmProgress"), "LINE CLEARED: all reminders sent");
 }
 
 // A send changes only that person's row, the SENT count and the batch panel. Redrawing just those
 // keeps a tap fast: a full list redraw + layout takes ~50 ms at 444 people, ~0.45 s at 3,000.
 function renderSentRow(rec) {
   const tab = view.tab, row = $("rmList").querySelector(`.rm-row[data-idx="${rec.idx}"]`);
-  if (row) row.outerHTML = remindRowHtml({ rec, status: statusOf(rec, tab) }, tab);
-  renderProgress(remindItems(tab), tab);
+  if (row) {
+    row.outerHTML = remindRowHtml({ rec, status: statusOf(rec, tab) }, tab);
+    $("rmList").querySelector(`.rm-row[data-idx="${rec.idx}"]`)?.classList.add("just-sent");   // class comes from the tap, not the minute-precision timestamp
+  }
+  renderProgress(remindItems(tab), tab, true);
   renderBatch();
 }
 
@@ -2098,6 +2291,7 @@ function renderRemindKeepScroll() {
 
 // Opening a chat link: record it after the browser has followed the link.
 function chatOpened(rec, tab) {
+  sound.send();
   setTimeout(() => recordAction(rec, tab), 0);
 }
 
@@ -2105,6 +2299,8 @@ $("subIppt").addEventListener("click", () => { view.tab = "ippt"; view.filter = 
 $("subShoot").addEventListener("click", () => { view.tab = "shoot"; view.filter = "ALL"; renderRemind(); });
 $("rmGroup").addEventListener("change", e => { view.group = e.target.value; batch.queue = []; renderRemind(); });
 $("rmOpenIn").addEventListener("change", e => { settings.openIn = e.target.checked ? "app" : "web"; saveSettings(); renderRemind(); });
+$("lookSound").addEventListener("change", e => { look.sound = e.target.checked; saveLook(); sound.send(); });   // the blip (inside this click) creates the AudioContext
+$("lookCrt").addEventListener("change", e => { look.crt = e.target.checked; saveLook(); document.body.classList.toggle("crt", look.crt); });
 for (const [k, id] of Object.entries(SETTING_INPUTS))
   $(id).addEventListener("input", e => { settings[k] = e.target.value; settingsChanged(); });
 $("rmTemplates").addEventListener("input", e => {
@@ -2173,7 +2369,7 @@ const stillToSend = (rec, tab = batch.tab) => canSend(rec, tab) && !sentAt(rec, 
 // Moves to the next person still to send; ends the batch (and starts the cool-down) after the last.
 function advanceBatch() {
   do batch.pos++; while (batch.pos < batch.queue.length && !stillToSend(batch.queue[batch.pos]));
-  if (batch.pos >= batch.queue.length) endBatch();
+  if (batch.pos >= batch.queue.length) { const n = batch.queue.length; endBatch(); lineCleared($("batchPanel"), `BATCH CLEARED: ${n} chats opened`); }
 }
 function endBatch() {
   if (batch.pos > 0) {
@@ -2193,9 +2389,10 @@ function renderBatch() {
     return;
   }
   const rec = batch.queue[batch.pos];
+  const frac = batch.pos / batch.queue.length;
   panel.hidden = false;
   panel.innerHTML = `<div class="bp-head">BATCH &middot; ${batch.pos + 1} / ${batch.queue.length}</div>
-    <div class="bp-meter"><i style="width:${(batch.pos / batch.queue.length) * 100}%"></i></div>
+    <div class="bp-meter"><i style="width:${frac * 100}%"></i></div>
     <div class="bp-next">Next: <b>${esc(rec.name)}</b> <span class="ph">${esc(displayPhone(rec))}</span></div>
     <div class="bp-actions">
       <a class="btn big green" id="bNext" href="${esc(chatLink(rec, batch.tab))}" target="spf_wa">&#9654; Open chat ${batch.pos + 1}</a>
@@ -2255,6 +2452,9 @@ window.addEventListener("beforeunload", e => {
    21. BOOT
    ===================================================================== */
 applySettings(store.load(STORE.settings, null));
+$("lookSound").checked = look.sound;
+$("lookCrt").checked = look.crt;
+document.body.classList.toggle("crt", look.crt);
 openGate();
 updateSaveBar();
 })();
