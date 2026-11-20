@@ -3,3 +3,7 @@
 !/index.html
 !/LICENSE
 !/.gitignore
+# the CO guide page (made-up sample data only), at /docs/
+!/docs/
+/docs/*
+!/docs/index.html
