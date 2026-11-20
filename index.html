@@ -874,6 +874,7 @@ let actions = store.load(STORE.actions, {});
 // Writes to the sheet not done yet (see section 12). Kept on the device so they survive closing the page.
 let queue = store.load(STORE.queue, []);
 if (!Array.isArray(queue)) queue = [];
+if (!Array.isArray(queue)) queue = [];
 let flushing = false;      // a write is in progress
 let needSignIn = false;    // a write got 401: the next try needs a fresh Google sign-in (a click)
 
@@ -1112,10 +1113,15 @@ const gsheets = (() => {
     .then(() => new Promise((resolve, reject) => gapi.load("picker", { callback: resolve, onerror: () => { picker = null; reject(fail("offline")); } })));
   async function api(path, init = {}) {
     let res;
-    try {
-      res = await fetch(SHEETS_API + path, { ...init,
-        headers: { Authorization: "Bearer " + token, ...(init.body ? { "Content-Type": "application/json" } : {}) } });
-    } catch { throw fail("offline"); }
+    // Google's per-minute limit (429) or a busy server (503): wait 1 s, 2 s, 4 s and try again before giving up
+    for (let wait = 1000; ; wait *= 2) {
+      try {
+        res = await fetch(SHEETS_API + path, { ...init,
+          headers: { Authorization: "Bearer " + token, ...(init.body ? { "Content-Type": "application/json" } : {}) } });
+      } catch { throw fail("offline"); }
+      if ((res.status !== 429 && res.status !== 503) || wait > 4000) break;
+      await new Promise(r => setTimeout(r, wait));
+    }
     if (!res.ok) {
       if (res.status === 401) token = null;            // expired: the next signIn asks Google again
       const text = await res.text().catch(() => "");
@@ -1274,6 +1280,7 @@ async function loadFromGoogle(idOrLink) {
   setBoarding(true);
   try {
     await gsheets.signIn();
+    needSignIn = false;   // signed in again: writes held back by an expired sign-in can go
     const meta = await gsheets.meta(id);
     const tab = meta.sheets.find(s => s.title.trim().toLowerCase() === "ippt");
     if (!tab) throw { kind: "noTab" };
@@ -1436,16 +1443,25 @@ function openSheets(sheetList, label, isDemo = false, newDoc = null) {
 // Re-reads the IPPT tab of the loaded sheet (Refresh button, back after 5 minutes away, a moved row on write).
 // The CO keeps their place; queued writes stay and are retried afterwards. Not while a ticket field is open.
 // Returns true when the sheet was re-read.
-let refreshing = false;
+let refreshing = false, writesDone = 0;
 async function refreshSheet() {
   if (!doc || refreshing) return false;
   if ($("fields").querySelector(".edit-in")) { toast("Finish editing first"); return false; }
   refreshing = true;
   $("refresh").disabled = true;
+  const d = doc;
   try {
-    const values = await gsheets.read(doc.id, tabRange());
-    const newDoc = buildDoc(doc.id, doc.title, { title: doc.tab, sheetId: doc.sheetId, columnCount: doc.columnCount }, values);
-    loadData([{ name: doc.tab, rows: values }], doc.title, { doc: newDoc, keepView: true });
+    // a write that lands while the tab is being read would come back with its old value: read again once
+    let values;
+    for (let tries = 0; tries < 2; tries++) {
+      const w = writesDone;
+      values = await gsheets.read(d.id, tabRange("", d.tab));
+      if (writesDone === w) break;
+    }
+    if (doc !== d) return false;   // another sheet was loaded meanwhile: this read belongs to the old one
+    needSignIn = false;
+    const newDoc = buildDoc(d.id, d.title, { title: d.tab, sheetId: d.sheetId, columnCount: d.columnCount }, values);
+    loadData([{ name: d.tab, rows: values }], d.title, { doc: newDoc, keepView: true });
   } catch (e) {
     if (e && e.status === 401) { needSignIn = true; updateSyncBar(); }   // the sync bar offers "Sign in again" (needs a click)
     toast(plainError(e));
@@ -1574,36 +1590,43 @@ function queueWrite(item) {
   item.doc = doc.id; item.ts = Date.now();
   if (item.kind === "cell") {   // a newer edit of the same cell replaces one still waiting (and keeps its row check)
     const i = queue.findIndex(q => q.doc === item.doc && q.key === item.key && q.kind === "cell" && q.header === item.header);
-    if (i >= 0) { item.name = queue[i].name; item.phone = queue[i].phone; queue.splice(i, 1); }
-  }
-  queue.push(item);
+    // in its place, not at the back: a later item (e.g. a stamp after an HP edit) may rely on it being written first
+    if (i >= 0) { item.name = queue[i].name; item.phone = queue[i].phone; queue[i] = item; }
+    else queue.push(item);
+  } else queue.push(item);
   saveQueue();
   updateSyncBar();
   flushQueue();
 }
 
 // Writes the loaded sheet's items one by one, oldest first (items for another sheet wait until that sheet is loaded).
-// Stops at the first failure: the item keeps its error for the sync bar; Retry, a refresh or a new sign-in tries again.
+// Signed out, offline or rate-limited: stop, Retry / a refresh / a new sign-in tries again. Any other failure (e.g. a
+// protected range) keeps that item with its error and moves on, so one bad item doesn't hold up the rest.
 async function flushQueue() {
   if (flushing || !doc || needSignIn) return;
   flushing = true;
+  const startDoc = doc, failed = new Set();
   updateSyncBar();
   try {
     let item;
-    while (doc && (item = queue.find(q => q.doc === doc.id))) {
+    while (doc === startDoc && (item = queue.find(q => q.doc === doc.id && !failed.has(q)))) {
       try {
         await writeItem(item);
+        writesDone++;
         const i = queue.indexOf(item);           // may have been replaced by a newer edit meanwhile
         if (i >= 0) queue.splice(i, 1);
         saveQueue();
       } catch (e) {
+        if (doc !== startDoc) break;             // another sheet was loaded mid-write: this item waits for its sheet, no error
         item.error = plainError(e);
         if (e && e.status === 401) needSignIn = true;
-        break;
+        if (e && (e.status === 401 || e.status === 429 || e.status === 503 || e.kind === "offline" || !e.status)) break;
+        failed.add(item);
       }
     }
   } finally {
     flushing = false;
+    if (doc && doc !== startDoc) setTimeout(flushQueue);   // the newly loaded sheet's own items
     saveQueue();
     updateSyncBar();
     if (selected && !$("fields").querySelector(".edit-in")) showResult(selected, true);   // SYNCING tags off; not while a box is open
