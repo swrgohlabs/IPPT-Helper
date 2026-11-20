@@ -328,9 +328,17 @@
   .gsheet .or::before, .gsheet .or::after { content: ""; flex: 1; border-top: 2px dashed currentColor; }
   #gateBrowse { background: #fff; }
   #gateBrowse:hover { background: var(--hover); }
-  #gateRecent { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  /* returning CO: Continue (last sheet) on top, other recent sheets below, each can be forgotten */
+  #gateRecent { display: grid; gap: 8px; }
   #gateRecent:empty { display: none; }
-  #gateRecent .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: none; }
+  #gateRecent .cont { display: grid; gap: 2px; background: var(--ewl); color: #fff; }
+  #gateRecent .cont:hover { background: #2fae63; }
+  #gateRecent .cont small { font-size: 12px; text-transform: none; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #gateRecent .more { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; font-size: 12px; }
+  #gateRecent .more .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: none; }
+  #gateRecent .rc { display: inline-flex; max-width: 100%; }
+  #gateRecent .more .chip.x { padding: 3px 7px; border-left: 0; }
+  #gateRecent .linkbtn { margin-top: 0; justify-self: center; }
 
   /* ---------- toast + footer ---------- */
   .toast {
@@ -559,13 +567,13 @@
       <div class="roundel">TRANSCOM</div>
       <h2>Tap in to start</h2>
       <div class="gsheet">
+        <div id="gateRecent"></div>
         <div class="linkbox">
           <div class="input-row"><input id="gateLink" type="text" placeholder="Paste the Google Sheets link" autocomplete="off"></div>
           <button class="btn big" id="gateLoad">Load from link</button>
         </div>
         <div class="or">or</div>
         <button class="btn" id="gateBrowse">Browse my Google Drive</button>
-        <div id="gateRecent"></div>
       </div>
       <div class="dz-busy"><span class="blink">Doors closing...</span></div>
       <div id="gateErr"></div>
@@ -1139,15 +1147,16 @@ const gsheets = (() => {
       });
     },
     canPick: () => !GOOGLE_API_KEY.startsWith("PASTE_"),
-    // Google's "Select a file" window, spreadsheets only (own Drive, then Shared with me). Call after signIn.
+    // Google's "Select a file" window, spreadsheets only (own Drive, Shared with me, Recently picked). Call after signIn.
+    // recentFirst: open on the Recently picked tab (the CO has opened sheets before).
     // -> the picked sheet's id, or "" if the CO closed the window.
-    async pickSheet() {
+    async pickSheet(recentFirst) {
       await loadPicker();
       const P = google.picker;
+      const views = [new P.DocsView(P.ViewId.SPREADSHEETS).setIncludeFolders(true), new P.DocsView(P.ViewId.SPREADSHEETS).setOwnedByMe(false)];
+      if (recentFirst) views.unshift(P.ViewId.RECENTLY_PICKED); else views.push(P.ViewId.RECENTLY_PICKED);
       return new Promise(resolve => {
-        new P.PickerBuilder()
-          .addView(new P.DocsView(P.ViewId.SPREADSHEETS).setIncludeFolders(true))
-          .addView(new P.DocsView(P.ViewId.SPREADSHEETS).setOwnedByMe(false))
+        views.reduce((b, v) => b.addView(v), new P.PickerBuilder())
           .setOAuthToken(token).setDeveloperKey(GOOGLE_API_KEY).setAppId(GOOGLE_APP_ID)
           .setTitle("Choose your IPPT sheet")
           .setCallback(d => {
@@ -1218,9 +1227,19 @@ function rememberSheet(id, title) {
   store.save(STORE.sheets, [{ id, title }, ...loadRecent().filter(s => s.id !== id)].slice(0, RECENT_MAX));
   renderRecent();
 }
+function forgetSheet(id) {
+  store.save(STORE.sheets, loadRecent().filter(s => s.id !== id));
+  renderRecent();
+}
+// Kept only on this device (ids + titles), until forgotten here or the browser's site data is cleared.
 function renderRecent() {
-  $("gateRecent").innerHTML = loadRecent()
-    .map(s => `<button class="chip" data-id="${esc(s.id)}" title="${esc(s.title || s.id)}">Recent: ${esc(s.title || s.id)}</button>`).join("");
+  const [last, ...others] = loadRecent(), name = s => esc(s.title || s.id);
+  $("gateRecent").innerHTML = !last ? "" : `
+    <button class="btn big cont" data-id="${esc(last.id)}" title="${name(last)}">&#9654; Continue<small>${name(last)}</small></button>
+    ${others.length ? `<div class="more">Other recent:
+      ${others.map(s => `<span class="rc"><button class="chip" data-id="${esc(s.id)}" title="${name(s)}">${name(s)}</button><button class="chip x" data-forget="${esc(s.id)}" title="Forget ${name(s)}" aria-label="Forget ${name(s)}">&#10005;</button></span>`).join("")}</div>` : ""}
+    <button class="linkbtn" data-forget="${esc(last.id)}">Forget ${name(last)} on this device</button>
+    <div class="or">or open another sheet</div>`;
 }
 
 // A1 ranges, built only here so a test mock can parse them. Tab names are quoted ('IPPT'!B7).
@@ -1274,7 +1293,7 @@ async function browseDrive() {
   $("gateBrowse").disabled = true;
   try {
     await gsheets.signIn(true);
-    const id = await gsheets.pickSheet();
+    const id = await gsheets.pickSheet(loadRecent().length > 0);
     if (id) await loadFromGoogle(id);
   } catch (e) {
     showErr(plainError(e));
@@ -2466,6 +2485,8 @@ $("gateLoad").addEventListener("click", () => loadFromGoogle($("gateLink").value
 $("gateBrowse").addEventListener("click", browseDrive);
 $("gateLink").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("gateLoad").click(); } });
 $("gateRecent").addEventListener("click", e => {
+  const f = e.target.closest("button[data-forget]");
+  if (f) { forgetSheet(f.dataset.forget); return; }
   const b = e.target.closest("button[data-id]");
   if (b && !$("gateLoad").disabled) loadFromGoogle(b.dataset.id);
 });
