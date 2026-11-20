@@ -1755,10 +1755,19 @@ const properName = s => s.toLowerCase().replace(/,(?=\S)/g, ", ").split(/(\s+)/)
     : w.replace(/(^|[-(])([a-z])/g, (_, pre, ch) => pre + ch.toUpperCase())
        .replace(/^(\(?[A-Z])'([a-z])/, (_, pre, ch) => pre + "'" + ch.toUpperCase()))
   .join("");
+// The name a message greets someone by: the given name before bin / binte / bte / s/o / d/o / a/l / a/p (the rest is the
+// father's name), so "HAREEN S/O RAJ" -> "Hareen", "MUHAMMAD FARIS BIN ISMAIL" -> "Muhammad Faris" (Ryan, 21 Nov 2026).
+// Other names in full ("Tan Wei Ming"). "Al" on its own is an Arabic name part ("Al Amin"), not a/l, and is kept.
+function callName(s) {
+  const full = properName(s), words = full.split(/\s+/);
+  const at = words.findIndex(w => NAME_PARTICLES.has(w.replace(/[,.]+$/, "")));
+  if (at > 0) return words.slice(0, at).join(" ").replace(/[,.]+$/, "");
+  return full.charAt(0).toUpperCase() + full.slice(1);   // a name that starts with "bin": kept whole, capitalised
+}
 
 function fillTemplate(tpl, rec) {
   const values = {
-    name: properName(rec.name), me: settings.me.trim(), lastFY: settings.lastFy, thisFY: settings.thisFy, deadline: settings.deadline.trim(),
+    name: callName(rec.name), me: settings.me.trim(), lastFY: settings.lastFy, thisFY: settings.thisFy, deadline: settings.deadline.trim(),
     result: resultText(cellOf(rec, cols.thisFy)), nsfit: cellOf(rec, cols.nsfit), fit: fitText(rec),
   };
   if (!values.me) tpl = tpl.replaceAll(", this is {me}", "");
