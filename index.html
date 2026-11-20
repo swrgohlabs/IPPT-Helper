@@ -552,12 +552,13 @@
       <div class="gsheet">
         <div class="input-row"><input id="gateLink" type="text" placeholder="Paste the Google Sheets link" autocomplete="off"></div>
         <button class="btn big" id="gateLoad">Load from Google Sheets</button>
+        <button class="btn" id="gateBrowse">Or browse my Google Drive</button>
         <div id="gateRecent"></div>
       </div>
       <div class="dz-busy"><span class="blink">Doors closing...</span></div>
       <div id="gateErr"></div>
       <ol class="howto">
-        <li><b>Paste</b> your Google Sheets link and sign in with Google.</li>
+        <li><b>Paste</b> your Google Sheets link (or <b>browse</b> your Drive) and sign in with Google.</li>
         <li><b>Find</b> officers or <b>send</b> WhatsApp reminders.</li>
         <li>Sent reminders and edits are <b>written back</b> to the sheet.</li>
       </ol>
@@ -586,6 +587,10 @@ const STORE = { actions: "spf.actions.v1", settings: "spf.remind.v1", batchEnded
 // Google sign-in. The client ID is public (it goes into the page); "PASTE_..." means not set up yet.
 const GOOGLE_CLIENT_ID = "284548337400-31be0n7meq974pce55s0ob2bkalq4s96.apps.googleusercontent.com";
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets/", SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+// Browse Drive (Google Picker): a browser API key restricted to this site + the Picker API, and the Cloud project number.
+// drive.file lets the Picker list Drive and grants the app only the files picked.
+const GOOGLE_API_KEY = "AIzaSyDCd8qwTzQEFkXqaPwWXWBg-54HsNnX3lA", GOOGLE_APP_ID = "284548337400";
+const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const HP_LENGTH = 8, COUNTRY_CODE = "65";            // Singapore mobile numbers
 const NO_COL = -1;                         // column not in the sheet
 const NSFIT_SESSIONS = 9;                  // failing IPPT after this many NSFIT sessions meets the requirement
@@ -1069,16 +1074,19 @@ function priorityOf(rec) {
 // The access token lives in this closure only: never stored, gone when the page closes.
 // Always call gsheets.x(...), never destructure, so tests can swap in a mock: Object.assign(gsheets, mock).
 const gsheets = (() => {
-  let token = null, gsi = null;
+  let token = null, gsi = null, picker = null, driveOk = false;
   const fail = kind => Object.assign(new Error(kind), { kind });
-  // Google's sign-in script is added to the page only here, when the CO asks to sign in.
-  const loadGsi = () => gsi ||= new Promise((resolve, reject) => {
+  // Google's scripts are added to the page only here: sign-in when the CO asks to sign in, the Picker when they browse.
+  const addScript = (src, reset) => new Promise((resolve, reject) => {
     const s = document.createElement("script");
-    s.src = "https://accounts.google.com/gsi/client";
+    s.src = src;
     s.onload = resolve;
-    s.onerror = () => { gsi = null; s.remove(); reject(fail("offline")); };
+    s.onerror = () => { reset(); s.remove(); reject(fail("offline")); };
     document.head.appendChild(s);
   });
+  const loadGsi = () => gsi ||= addScript("https://accounts.google.com/gsi/client", () => gsi = null);
+  const loadPicker = () => picker ||= addScript("https://apis.google.com/js/api.js", () => picker = null)
+    .then(() => new Promise((resolve, reject) => gapi.load("picker", { callback: resolve, onerror: () => { picker = null; reject(fail("offline")); } })));
   async function api(path, init = {}) {
     let res;
     try {
@@ -1095,22 +1103,46 @@ const gsheets = (() => {
     return res.json();
   }
   return {
-    // Resolves once a token is held.
-    async signIn() {
-      if (token) return;
+    // Resolves once a token is held. drive: also ask for drive.file (only Browse needs it; pasting a link never asks).
+    async signIn(drive) {
+      if (token && (!drive || driveOk)) return;
       if (location.protocol === "file:") throw fail("fileUrl");
       if (GOOGLE_CLIENT_ID.startsWith("PASTE_")) throw fail("noClient");
       if (!navigator.onLine) throw fail("offline");
       await loadGsi();
       await new Promise((resolve, reject) => {
         google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID, scope: SHEETS_SCOPE,
+          client_id: GOOGLE_CLIENT_ID, scope: drive ? SHEETS_SCOPE + " " + DRIVE_FILE_SCOPE : SHEETS_SCOPE,
+          include_granted_scopes: true,
           callback: r => {
-            if (r.access_token) { token = r.access_token; resolve(); }
+            if (r.access_token) {
+              token = r.access_token;
+              driveOk = google.accounts.oauth2.hasGrantedAllScopes(r, DRIVE_FILE_SCOPE);
+              resolve();
+            }
             else reject(r.error === "access_denied" ? fail("cancelled") : new Error(r.error_description || r.error || "Sign-in failed."));
           },
           error_callback: e => reject(fail(e && e.type === "popup_failed_to_open" ? "blocked" : "cancelled")),
         }).requestAccessToken();
+      });
+    },
+    canPick: () => !GOOGLE_API_KEY.startsWith("PASTE_"),
+    // Google's "Select a file" window, spreadsheets only (own Drive, then Shared with me). Call after signIn.
+    // -> the picked sheet's id, or "" if the CO closed the window.
+    async pickSheet() {
+      await loadPicker();
+      const P = google.picker;
+      return new Promise(resolve => {
+        new P.PickerBuilder()
+          .addView(new P.DocsView(P.ViewId.SPREADSHEETS).setIncludeFolders(true))
+          .addView(new P.DocsView(P.ViewId.SPREADSHEETS).setOwnedByMe(false))
+          .setOAuthToken(token).setDeveloperKey(GOOGLE_API_KEY).setAppId(GOOGLE_APP_ID)
+          .setTitle("Choose your IPPT sheet")
+          .setCallback(d => {
+            if (d.action === P.Action.PICKED) resolve(d.docs[0].id);
+            else if (d.action === P.Action.CANCEL) resolve("");
+          })
+          .build().setVisible(true);
       });
     },
     // -> { title, sheets: [{ title, sheetId, columnCount }] }
@@ -1147,6 +1179,7 @@ const gsheets = (() => {
 function plainError(e) {
   const kind = e && e.kind, status = e && e.status;
   if (kind === "noClient") return "Google sign-in is not set up yet (no client ID).";
+  if (kind === "noKey") return "Browsing Drive is not set up yet. Paste the sheet link instead.";
   if (kind === "fileUrl") return "Open https://transcom.gyanroh.com to use Google Sheets";
   if (kind === "cancelled") return "Sign-in was cancelled.";
   if (kind === "blocked") return "The sign-in popup was blocked. Allow popups for this site and try again.";
@@ -1198,9 +1231,10 @@ function buildDoc(id, title, tab, values) {
   return { id, title, tab: tab.title, sheetId: tab.sheetId, columnCount: tab.columnCount, header, headerRow, rowOf, keep: [], logAt: {} };
 }
 
+const showErr = msg => { $("gateErr").innerHTML = $("status").innerHTML = `<span class="warn">ERROR</span> ${esc(msg)}`; };
+
 // Sign in, read only the IPPT tab, open it.
 async function loadFromGoogle(idOrLink) {
-  const showErr = msg => { $("gateErr").innerHTML = $("status").innerHTML = `<span class="warn">ERROR</span> ${esc(msg)}`; };
   const id = sheetIdFrom(idOrLink);
   if (!id) { showErr("Paste a Google Sheets link"); return; }
   setBoarding(true);
@@ -1218,6 +1252,22 @@ async function loadFromGoogle(idOrLink) {
     showErr(plainError(e));
   } finally {
     setBoarding(false);
+  }
+}
+
+// Sign in, let the CO pick a sheet in Google's file window, then load it as if its link was pasted.
+async function browseDrive() {
+  if (!gsheets.canPick()) { showErr(plainError({ kind: "noKey" })); return; }
+  $("gateErr").innerHTML = "";
+  $("gateBrowse").disabled = true;
+  try {
+    await gsheets.signIn(true);
+    const id = await gsheets.pickSheet();
+    if (id) await loadFromGoogle(id);
+  } catch (e) {
+    showErr(plainError(e));
+  } finally {
+    $("gateBrowse").disabled = document.body.classList.contains("boarding");
   }
 }
 
@@ -1794,7 +1844,7 @@ const sound = {
 // While a sheet is being read: "Doors closing" on the start popup, load buttons off.
 function setBoarding(on) {
   document.body.classList.toggle("boarding", on);
-  $("gateLoad").disabled = $("pick").disabled = on;
+  $("gateLoad").disabled = $("gateBrowse").disabled = $("pick").disabled = on;
 }
 
 /* ---------- gate + tabs ---------- */
@@ -2401,6 +2451,7 @@ window.addEventListener("blur", wentAway);
 window.addEventListener("focus", maybeRefresh);
 $("gateDemo").addEventListener("click", () => openSheets(DEMO_SHEETS, "sample data", true));
 $("gateLoad").addEventListener("click", () => loadFromGoogle($("gateLink").value));
+$("gateBrowse").addEventListener("click", browseDrive);
 $("gateLink").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("gateLoad").click(); } });
 $("gateRecent").addEventListener("click", e => {
   const b = e.target.closest("button[data-id]");
