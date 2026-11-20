@@ -107,7 +107,7 @@
   @keyframes run { from { transform: translateX(-220px); } to { transform: translateX(100cqw); } }
   @media (prefers-reduced-motion: reduce) { .train { animation: none; transform: translateX(16px); } .blink { animation: none; } }
   .train svg { display: block; shape-rendering: crispEdges; }
-  /* arrival after a file loads (body.arrive, then .depart; see arrive()): train stops centred, lamp flashes twice,
+  /* arrival after a sheet loads (body.arrive, then .depart; see arrive()): train stops centred, lamp flashes twice,
      panels drop in one after another (titles and stat boxes only, never the long lists), then the train leaves and the loop resumes */
   .arrive-sign { margin-left: auto; min-width: 0; background: #000; color: #ffe27a; padding: 2px 8px; font-size: 12px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; }
   @media (prefers-reduced-motion: no-preference) {
@@ -137,7 +137,6 @@
   /* ---------- your data panel ---------- */
   .loader { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .status { flex: 1; min-width: 220px; }
-  body.dragging .loader-panel { outline: 4px dashed var(--nsl); outline-offset: 4px; }
 
   /* ---------- tabs ---------- */
   /* folder tabs: the active tab joins the framed page below it, in the same colour */
@@ -236,6 +235,8 @@
   .field.edited { border-color: var(--ccl); box-shadow: 4px 4px 0 var(--ccl); }
   .ed-tag { background: var(--ccl); color: #000; padding: 0 4px; font-size: 9px; }
   .edit-in { display: block; width: 100%; border: 0; border-top: 3px solid var(--ccl); background: var(--hover); padding: 9px 8px; font: inherit; font-size: 16px; resize: vertical; outline: 0; }
+  select.edit-in, input.edit-in { min-height: 44px; color: inherit; cursor: pointer; }
+  input.edit-in[type="number"] { cursor: text; }
 
   /* ---------- full list (roster) ---------- */
   .roster { max-height: 560px; overflow-y: auto; border: 3px solid #000; background: #fff; }
@@ -290,18 +291,21 @@
   @keyframes stamp { from { transform: scale(1.4); opacity: 0; } }
   @keyframes bump { 50% { transform: translateY(-4px) scale(1.25); } }
   @media (prefers-reduced-motion: reduce) { .rm-row.just-sent .when, #rmProgress b.bump { animation: none; } }
+  /* send gate: Send is greyed until Your name, FY and deadline are filled (see sendReady) */
+  .send-off a.send, .send-off #bNext { opacity: .45; pointer-events: none; }
+  .linkbtn.warn { color: var(--nsl); margin-top: 0; }
   .bp-next { margin-bottom: 10px; font-size: 17px; }
   .bp-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .bp-done { color: var(--ewl); }
 
-  /* ---------- save bar ---------- */
-  .savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--nsl); border-top: var(--px) solid #000; color: #fff; }
-  .savebar-in { max-width: 980px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  /* ---------- sync bar: DTL blue while writing to the sheet, NSL red when writes are stuck ---------- */
+  .syncbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--dtl); border-top: var(--px) solid #000; color: #fff; }
+  .syncbar.stuck { background: var(--nsl); }
+  .syncbar-in { max-width: 980px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
   .sb-text { letter-spacing: 1px; }
 
-  /* ---------- gate + conflict popups ---------- */
+  /* ---------- gate popup ---------- */
   .overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(10, 12, 30, .88); }
-  #conflict { z-index: 110; }
   .modal { width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; background: var(--panel); border: var(--px) solid #000; box-shadow: 10px 10px 0 #000; }
   .modal-body { padding: 22px; text-align: center; }
   .modal-body.left { text-align: left; }
@@ -309,18 +313,15 @@
   .modal p { margin: 8px 0; }
   .modal ul { margin: 8px 0; padding-left: 20px; font-size: 13px; }
   .modal .roundel { margin: 0 auto 12px; background: var(--dtl); width: auto; padding: 0 14px; display: table; line-height: 48px; letter-spacing: 1px; }
-  .dropzone { margin-top: 16px; padding: 26px 16px; text-align: center; border: var(--px) dashed var(--nsl); background: #fff3ef; }
-  body.dragging .dropzone { background: #ffd6cc; border-style: solid; }
-  .dz-big { font-size: 20px; letter-spacing: 2px; color: var(--nsl); text-transform: uppercase; }
-  .dz-or { margin: 8px 0; color: var(--muted); font-size: 12px; }
-  .dz-busy { margin-bottom: 12px; }
-  body:not(.boarding) .dz-busy, body.boarding .dropzone .desk { display: none; }   /* while a file is being read */
+  .dz-busy { margin-top: 12px; font-size: 20px; letter-spacing: 2px; color: var(--nsl); text-transform: uppercase; }
+  body:not(.boarding) .dz-busy { display: none; }   /* only while a sheet is being read */
   .howto { text-align: left; margin: 16px 0 6px; padding-left: 22px; font-size: 13px; line-height: 1.5; }
   .howto-note { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
-  .dz-sub { margin-top: 12px; font-size: 12px; color: var(--muted); }
-  @media (pointer: coarse) { .desk { display: none; } }
   #gateErr { margin-top: 12px; }
-  .cf-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+  .gsheet { margin-top: 16px; display: grid; gap: 10px; }
+  #gateRecent { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  #gateRecent:empty { display: none; }
+  #gateRecent .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: none; }
 
   /* ---------- toast + footer ---------- */
   .toast {
@@ -362,7 +363,7 @@
       <small>WHATSAPP GROUP DIRECTORY &middot; COMMANDING OFFICERS</small>
     </div>
     <div class="spacer"></div>
-    <div class="board" id="board" title="Departure board">No train &middot; load an Excel</div>
+    <div class="board" id="board" title="Departure board">No train &middot; load a sheet</div>
     <div class="code-badge" aria-hidden="true">
       <b style="background:var(--nsl)">NS</b><b style="background:var(--ewl)">EW</b><b style="background:var(--nel)">NE</b><b style="background:var(--ccl)">CC</b><b style="background:var(--dtl)">DT</b><b style="background:var(--tel)">TE</b>
     </div>
@@ -397,11 +398,10 @@
       <div class="loader">
         <div class="status">
           <div id="status"></div>
-          <div id="dlState"></div>
+          <div id="syncState"></div>
         </div>
-        <button class="btn small" id="pick">Load different file</button>
-        <button class="btn green" id="dlBtn">&#11015; Download updated Excel</button>
-        <input type="file" id="file" accept=".xlsx,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
+        <button class="btn small" id="pick">Load different sheet</button>
+        <button class="btn small" id="refresh" hidden>Refresh</button>
       </div>
     </div>
   </section>
@@ -455,7 +455,7 @@
               <button class="btn small" id="openWa">Open WhatsApp</button>
             </div>
           </div>
-          <div class="hint ticket-hint">Click a field to edit.</div>
+          <div class="hint ticket-hint">Click a field to edit. Changes are written to the sheet.</div>
           <div class="fields" id="fields"></div>
           <div class="barcode" aria-hidden="true"><i></i><span id="resBarcode"></span></div>
         </div>
@@ -508,6 +508,7 @@
         <div class="toolbar">
           <div class="chips" id="rmChips"></div>
           <div class="toolbar-note" id="rmProgress"></div>
+          <button class="linkbtn warn" id="rmNeed" hidden>Fill in Your name, FY and deadline first</button>
         </div>
         <div class="batch-ctl">
           <button class="btn" id="bStart">&#9654; Start batch</button>
@@ -533,52 +534,35 @@
     MIND THE GAP <span class="blink">_</span></footer>
 </div>
 
-<!-- SAVE BAR: shows whenever there are updates not yet in the Excel -->
-<div class="savebar" id="saveBar" hidden>
-  <div class="savebar-in">
-    <span class="sb-text"><span class="blink">&#9632;</span> <b id="saveCount">0</b> <span id="saveWord">updates</span> NOT SAVED TO EXCEL</span>
-    <button class="btn green big" id="saveBtn">&#11015; Download updated Excel</button>
+<!-- SYNC BAR: shows while writes to the sheet are waiting or in progress -->
+<div class="syncbar" id="syncBar" hidden>
+  <div class="syncbar-in">
+    <span class="sb-text" id="syncText"></span>
+    <button class="btn small" id="syncRetry">Retry</button>
   </div>
 </div>
 
-<!-- GATE: must load a file before using the app -->
+<!-- GATE: must load a sheet (or the sample) before using the app -->
 <div class="overlay" id="gate">
   <div class="modal">
     <div class="lines"><i style="background:var(--nsl)"></i><i style="background:var(--ewl)"></i><i style="background:var(--nel)"></i><i style="background:var(--ccl)"></i><i style="background:var(--dtl)"></i><i style="background:var(--tel)"></i></div>
     <div class="modal-body">
       <div class="roundel">TRANSCOM</div>
       <h2>Tap in to start</h2>
-            <div class="dropzone">
-        <div class="dz-big dz-busy"><span class="blink">Doors closing...</span></div>
-        <div class="dz-big desk">&#8681; Drag your Excel file here</div>
-        <div class="desk dz-or">or</div>
-        <button class="btn big" id="gatePick">Choose Excel file</button>
-        <div class="dz-sub">.xlsx or .csv</div>
+      <div class="gsheet">
+        <div class="input-row"><input id="gateLink" type="text" placeholder="Paste the Google Sheets link" autocomplete="off"></div>
+        <button class="btn big" id="gateLoad">Load from Google Sheets</button>
+        <div id="gateRecent"></div>
       </div>
+      <div class="dz-busy"><span class="blink">Doors closing...</span></div>
       <div id="gateErr"></div>
       <ol class="howto">
-        <li><b>Load</b> your Excel list.</li>
+        <li><b>Paste</b> your Google Sheets link and sign in with Google.</li>
         <li><b>Find</b> officers or <b>send</b> WhatsApp reminders.</li>
-        <li><b>Download</b> the updated Excel.</li>
+        <li>Sent reminders and edits are <b>written back</b> to the sheet.</li>
       </ol>
-      <p class="howto-note">Your Excel is not uploaded anywhere.</p>
+      <p class="howto-note">Signs in with Google; data goes only between Google and this device.</p>
       <button class="linkbtn" id="gateDemo">Try with sample data</button>
-    </div>
-  </div>
-</div>
-
-<!-- CONFLICT: loaded file is missing updates made on this device -->
-<div class="overlay" id="conflict" hidden>
-  <div class="modal">
-    <div class="panel-title" style="background:var(--nsl)"><span class="dot"></span>&#9888; This file may be outdated</div>
-    <div class="modal-body left">
-      <p><b id="cfCount"></b> update(s) on this device are <u>not</u> in this file (latest: <b id="cfDate"></b>).</p>
-      <ul id="cfList"></ul>
-      <p class="hint">This may be an older copy. The newest is usually the file ending in <b>_updated_...</b> in Downloads.</p>
-      <div class="cf-actions">
-        <button class="btn green" id="cfKeep">Keep my edits (recommended)</button>
-        <button class="btn small" id="cfOverride">Use this file as-is</button>
-      </div>
     </div>
   </div>
 </div>
@@ -594,17 +578,19 @@
    ===================================================================== */
 const TABS = ["ippt", "shoot"];
 const TAB_LABEL = { ippt: "IPPT", shoot: "Shooting" };
-const LOG_COLS = { ippt: "IPPT reminder sent", shoot: "Shooting reminder sent" };   // added to the exported Excel
-const META_SHEET = "_SPF";                                                          // hidden sheet: save time + settings
-const STORE = { actions: "spf.actions.v1", edits: "spf.edits.v1", settings: "spf.remind.v1", batchEnded: "spf.batch.v1",
-  look: "spf.look.v1" };   // device-only look switches (sound, CRT), never in the saved Excel
+const LOG_COLS = { ippt: "IPPT reminder sent", shoot: "Shooting reminder sent" };   // written into the IPPT tab
+const STORE = { actions: "spf.actions.v1", settings: "spf.remind.v1", batchEnded: "spf.batch.v1",
+  look: "spf.look.v1",     // device-only look switches (sound, CRT)
+  sheets: "spf.sheets.v1", // recent Google Sheets: ids + titles only
+  queue: "spf.queue.v1" }; // writes to the sheet still waiting (see section 12)
+// Google sign-in. The client ID is public (it goes into the page); "PASTE_..." means not set up yet.
+const GOOGLE_CLIENT_ID = "284548337400-31be0n7meq974pce55s0ob2bkalq4s96.apps.googleusercontent.com";
+const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets/", SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const HP_LENGTH = 8, COUNTRY_CODE = "65";            // Singapore mobile numbers
 const NO_COL = -1;                         // column not in the sheet
 const NSFIT_SESSIONS = 9;                  // failing IPPT after this many NSFIT sessions meets the requirement
 const NSFIT_TRACK = ["NSFIT", "Finish NSFIT", "NSFIT done"];   // statuses whose ticket highlights NSFIT Attended
 const BATCH_MAX = 20, COOLDOWN_MS = 24 * 3600000;       // wait 1-2 days between batches so WhatsApp doesn't flag the number as spam
-const EXCEL_EPOCH = 25569, DAY_MS = 86400000;
-const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 // Message wording. A line with a placeholder that is empty for that person (no NSFIT count, no link set) is left out.
 const GOOD_TO_KNOW =
@@ -719,35 +705,35 @@ const PRIORITY = [
 
 // Made-up people in the same layout as the real "(Draft) FY26 IPPT engagement" list: same columns in the same order,
 // same value styles (codes in "IPPT Rs", #N/A where the lookup found nothing). No real names, numbers or units.
-const MFIT = "9002 - RT/Mandatory", VFIT = "9001 - IPT/NS FIT", NA = "#N/A";
+const MFIT = "9002 - RT/Mandatory", VFIT = "9001 - IPT/NS FIT", NA = "#N/A", WIN = "IPPT Window";
 const TEAM_A = "NSMEN TEAM A, OUTRAM BASE, TRANSCOM, SPF", TEAM_B = "NSMEN TEAM B, WOODLANDS BASE, TRANSCOM, SPF", TEAM_C = "NSMEN TEAM C, PAYA LEBAR BASE, TRANSCOM, SPF";
 const DEMO_SHEETS = [{ name: "Sheet1", rows: [
   ["Pers.No.", "Full Name", "Rank", "JO/SO", "Unit", "Actual Org Unit", "Organizational Unit", "Position", "Birth date", "Age (FY)", "HRP Age", "PES",
-   "FY26 Planned ICT", "IPPT Rs", "IPPT Date", "NSFIT Attended", "VFIT/MFIT", "Phone", "Email"],
+   "FY26 Planned ICT", "IPPT Rs", "IPPT Date", "NSFIT Attended", "IPPT/MFIT Window", "Phone", "Email", "Intake", "Team", "Remarks"],
   ["10000001", "TAN MANDATORY NSFIT", "Sergeant 1 (NS)", "JO", "TransCom", "Team A", TEAM_A, "NSM-Patrol Officer", "14/3/1992", "34", "34", "B1",
-   "PLAN FOR DEC ICT 2", NA, NA, "3", MFIT, "91234567", "tan.mandatory@example.com"],
+   "PLAN FOR DEC ICT 2", NA, NA, "3", MFIT, "91234567", "tan.mandatory@example.com", "P175", "NS CO ALPHA TROOP 1", ""],
   ["10000002", "LIM PASS", "Corporal (NS)", "JO", "TransCom", "Team A", TEAM_A, "NSM-Patrol Officer", "2/11/1996", "29", "29", "A",
-   "Aug ICT 3", "PS", "14/8/2026", NA, NA, "82345678", "lim.pass@example.com"],
+   "Aug ICT 3", "PS", "14/8/2026", NA, WIN, "82345678", "lim.pass@example.com", "P176", "NS CO ALPHA TROOP 1", "Called, no answer"],
   ["10000003", "FARIS FAIL BIN ISMAIL", "Sergeant 2 (NS)", "JO", "TransCom", "Team A", TEAM_A, "NSM-Senior Patrol Officer", "27/6/1989", "36", "37", "B1",
-   "PLAN FOR NOV ICT 1", "FL", "18/5/2026", NA, NA, "65-93456789", "faris.fail@example.com"],
+   "PLAN FOR NOV ICT 1", "FL", "18/5/2026", NA, WIN, "65-93456789", "faris.fail@example.com", "P175", "NS CO ALPHA TROOP 1", ""],
   ["10000004", "RAJ NOT TAKEN S/O KUMAR", "Sergeant 3 (NS)", "JO", "TransCom", "Team A", TEAM_A, "NSM-Section Leader", "9/1/1987", "39", "39", "A",
-   "PLAN FOR JAN ICT 1", NA, NA, NA, NA, "84567890", "raj.nottaken@example.com"],
+   "PLAN FOR JAN ICT 1", NA, NA, NA, WIN, "84567890", "raj.nottaken@example.com", "P176", "NS CO ALPHA TROOP 1", ""],
   ["10000005", "NG SILVER", "Corporal (NS)", "JO", "TransCom", "Team A", TEAM_A, "NSM-Patrol Officer", "30/8/1995", "30", "31", "B2",
-   "May ICT 2", "SV", "2/6/2026", NA, NA, "95678901", "ng.silver@example.com"],
+   "May ICT 2", "SV", "2/6/2026", NA, WIN, "95678901", "ng.silver@example.com", "P175", "NS CO ALPHA TROOP 1", ""],
   ["10000006", "CHUA ABSENT ON NSFIT", "Sergeant 1 (NS)", "JO", "TransCom", "Team B", TEAM_B, "NSM-Patrol Officer", "19/4/1990", "35", "36", "B1",
-   "PLAN FOR OCT ICT 4", "AB", "9/9/2026", "7", MFIT, "86789012", "chua.absent@example.com"],
+   "PLAN FOR OCT ICT 4", "AB", "9/9/2026", "7", MFIT, "86789012", "chua.absent@example.com", "P176", "NS CO ALPHA TROOP 1", "Medical review pending"],
   ["10000007", "SITI NSFIT NOT STARTED BINTE AHMAD", "Sergeant 2 (NS)", "JO", "TransCom", "Team B", TEAM_B, "NSM-Senior Patrol Officer", "5/12/1991", "34", "34", "B1",
-   "PLAN FOR DEC ICT 4", NA, NA, "0", MFIT, "97890123", "siti.notstarted@example.com"],
+   "PLAN FOR DEC ICT 4", NA, NA, "0", MFIT, "97890123", "siti.notstarted@example.com", "P175", "NS CO ALPHA TROOP 1", ""],
   ["10000008", "WONG PASS INCENTIVE", "Corporal (NS)", "JO", "TransCom", "Team B", TEAM_B, "NSM-Patrol Officer", "23/7/1997", "28", "29", "A",
-   "July ICT 4", "PI", "3/7/2026", NA, NA, "88901234", "wong.incentive@example.com"],
+   "July ICT 4", "PI", "3/7/2026", NA, WIN, "88901234", "wong.incentive@example.com", "P176", "NS CO ALPHA TROOP 1", ""],
   ["10000009", "ONG GOLD", "Inspector (NS)", "SO", "TransCom", "Team B", TEAM_B, "NSM-Team Commander", "11/2/1988", "38", "38", "A",
-   "0", "GD", "21/4/2026", NA, NA, "99012345", "ong.gold@example.com"],
+   "0", "GD", "21/4/2026", NA, WIN, "99012345", "ong.gold@example.com", "P175", "NS CO ALPHA TROOP 1", ""],
   ["10000010", "GURPREET NSFIT DONE", "Sergeant 1 (NS)", "JO", "TransCom", "Team C", TEAM_C, "NSM-Patrol Officer", "16/10/1993", "32", "32", "B1",
-   "PLAN FOR NOV ICT 3", "FL", "12/8/2026", "12", MFIT, "81123456", "gurpreet.nsfitdone@example.com"],
+   "PLAN FOR NOV ICT 3", "FL", "12/8/2026", "12", MFIT, "81123456", "gurpreet.nsfitdone@example.com", "P176", "NS CO ALPHA TROOP 1", "Posted out in Jan"],
   ["10000011", "TEO VOLUNTARY NSFIT", "Sergeant 3 (NS)", "JO", "TransCom", "Team C", TEAM_C, "NSM-Section Leader", "8/5/1986", "39", "40", "B",
-   "COMPLETED 1 ICT 7 DAYS", NA, NA, "1", VFIT, "9223456", "teo.voluntary@example.com"],
+   "COMPLETED 1 ICT 7 DAYS", NA, NA, "1", VFIT, "9223456", "teo.voluntary@example.com", "P175", "NS CO ALPHA TROOP 1", ""],
   ["10000012", "LEE NO RESULT", "Corporal (NS)", "JO", "TransCom", "Team C", TEAM_C, "NSM-Patrol Officer", "21/9/1998", "27", "28", "A",
-   "PLAN FOR FEB ICT 3", NA, NA, NA, NA, "83345678", "lee.noresult@example.com"],
+   "PLAN FOR FEB ICT 3", NA, NA, NA, WIN, "83345678", "lee.noresult@example.com", "P176", "NS CO ALPHA TROOP 1", ""],
 ]}];
 
 /* =====================================================================
@@ -756,7 +742,6 @@ const DEMO_SHEETS = [{ name: "Sheet1", rows: [
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const pad = n => String(n).padStart(2, "0");
-const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 // FNV-1a: short, stable text fingerprint
 function fnv(s) {
   let h = 0x811c9dc5;
@@ -789,11 +774,20 @@ const displayPhone = rec => fmtPhone(rec.phoneNorm || rec.phone);
 const intlPhone = rec => COUNTRY_CODE + rec.phoneNorm;   // 6591234567
 const hasValidHp = rec => rec.phoneNorm.length === HP_LENGTH;
 
+// --- sheet columns (A1 notation) ---
+function colName(i) {   // 0 -> A, 26 -> AA
+  let s = "";
+  for (i++; i; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s;
+  return s;
+}
+function colIndex(ref) {   // "AA7" -> 26
+  let n = 0;
+  for (const ch of /^([A-Z]+)/.exec(ref)[1]) n = n * 26 + ch.charCodeAt(0) - 64;
+  return n - 1;
+}
+
 // --- dates ---
 const minuteNow = () => Math.floor(Date.now() / 60000) * 60000;
-const serialToUtc = n => new Date(Math.round((n - EXCEL_EPOCH) * DAY_MS));
-const dateToSerial = (y, m, d) => Date.UTC(y, m - 1, d) / DAY_MS + EXCEL_EPOCH;
-const isRealDate = (y, m, d) => { const t = new Date(Date.UTC(y, m - 1, d)); return t.getUTCMonth() === m - 1 && t.getUTCDate() === d; };
 function fmtLogTime(ts) {
   const d = new Date(ts);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -802,8 +796,8 @@ function fmtWhen(ts) {
   if (!ts || isNaN(ts)) return "";
   return new Date(ts).toLocaleString("en-SG", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-// Reads a "reminder sent" cell back: our text format, d/m/yyyy if Excel converted and reformatted it
-// (day first, as in Singapore; the time may be lost), or a raw date serial.
+// Reads a "reminder sent" cell back: our text format, or d/m/yyyy if someone retyped it as a date in the sheet
+// (day first, as in Singapore; the time may be lost).
 function parseLogTime(v) {
   v = String(v ?? "").trim();
   if (!v) return 0;
@@ -811,10 +805,6 @@ function parseLogTime(v) {
   if (m) return new Date(+m[1], m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)).getTime();
   const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/.exec(v);
   if (dmy) return new Date(+dmy[3], dmy[2] - 1, +dmy[1], +(dmy[4] || 0), +(dmy[5] || 0)).getTime();
-  if (isNumber(v)) {                                    // a bare number: an Excel date serial
-    const d = serialToUtc(parseFloat(v));
-    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes()).getTime();
-  }
   const t = Date.parse(v);
   return isNaN(t) ? 0 : Math.floor(t / 60000) * 60000;
 }
@@ -841,37 +831,35 @@ const chipsHtml = (options, active) => options
 // Loaded data
 let headers = [];          // combined column names
 let rows = [];             // per person: cell values aligned to headers (edited in place)
-let savedRows = [];        // the same rows as they are in the loaded / last saved file
 let records = [];          // per person: name, phone, search tokens, badge...
 let recordsByRow = new Map();
-let sourceSheets = [];     // [{name, headers, map}] original sheet layout, map: cell index -> headers index
-let sourceRows = [];       // per row: {sheet, cells} original cells, rewritten on export
-let fileMeta = {};         // values from the hidden _SPF sheet
-let fileName = "";          // name of the file the data now lives in (changes after Save As)
-let sourceFileName = "";    // name of the file that was loaded
-let loadCount = 0;          // increases with every file load
+let sourceSheets = [];     // [{name, headers, map, keep, logAt}] original sheet layout, map: cell index -> headers index
+let sourceRows = [];       // per row: {sheet} index into sourceSheets
+let sourceTitle = "";      // title of the loaded Google sheet
 let demoMode = false;
 let cols = {};             // detected column indexes, see detectColumns()
+let doc = null;            // the loaded Google sheet (see buildDoc); null for sample data
 
-// Reminder log and edits: this device's copy, and what the loaded file contains
+// Reminder log: this device's copy of the sheet's "reminder sent" columns (personKey -> {ippt, shoot})
 let actions = store.load(STORE.actions, {});
-let fileActions = {};
-let edits = store.load(STORE.edits, {});   // fileKey -> {header lowercased: {v, ts}}
 
-// Message settings (saved on the device and inside the Excel)
+// Writes to the sheet not done yet (see section 12). Kept on the device so they survive closing the page.
+let queue = store.load(STORE.queue, []);
+if (!Array.isArray(queue)) queue = [];
+let flushing = false;      // a write is in progress
+let needSignIn = false;    // a write got 401: the next try needs a fresh Google sign-in (a click)
+
+// Message settings (saved on the device)
 const settings = {
   me: "", lastFy: "FY25", thisFy: "FY26", deadline: "March", openIn: "web",
   tpl: { ippt: { ...DEF_TPL.ippt }, shoot: { ...DEF_TPL.shoot } },
 };
 const SETTING_INPUTS = { me: "rmMe", lastFy: "rmLastFy", thisFy: "rmThisFy", deadline: "rmDeadline" };
-let settingsVersion = 0, savedSettingsVersion = 0;   // bumped on every settings change; equal = saved
-const settingsEdited = () => settingsVersion !== savedSettingsVersion;
 
 // View state
 const view = { tab: "ippt", filter: "ALL", group: "ALL", rosterFilter: "ALL" };
 let selected = null;       // record shown in the ticket
 const batch = { queue: [], pos: 0, tab: "", endedAt: store.load(STORE.batchEnded, 0) };   // endedAt kept on the device: the wait outlasts closing the page
-let saveHandle = null, autoSaveTimer = 0;
 
 /* =====================================================================
    4. NAME + HP SEARCH (typo tolerant)
@@ -1010,9 +998,9 @@ function detectColumns(hdrs) {
   };
 }
 
-// Excel errors (a lookup with no match shows "#N/A") count as empty.
-const EXCEL_ERROR = /^#(N\/A|REF!|VALUE!|DIV\/0!|NAME\?|NUM!|NULL!)$/i;
-const cellOf = (rec, col) => { const v = col >= 0 ? String(rec.raw[col] ?? "").trim() : ""; return EXCEL_ERROR.test(v) ? "" : v; };
+// Spreadsheet error values (a lookup with no match shows "#N/A") count as empty.
+const CELL_ERROR = /^#(N\/A|REF!|VALUE!|DIV\/0!|NAME\?|NUM!|NULL!|ERROR!)$/i;
+const cellOf = (rec, col) => { const v = col >= 0 ? String(rec.raw[col] ?? "").trim() : ""; return CELL_ERROR.test(v) ? "" : v; };
 // lower-case words only: "N/A" -> "n a", "Not Attempted!" -> "not attempted"
 const wordsOf = v => v.toLowerCase().replace(/[^a-z]+/g, " ").trim();
 // Result codes in the FY26 list's "IPPT Rs" column
@@ -1026,15 +1014,14 @@ const failLike = v => failedLike(v) || /\b(absent|ab)\b/i.test(v);
 // "9002 - RT/Mandatory" = mandatory NS FIT, "9001 - IPT/NS FIT" = voluntary NS FIT, blank = not on NS FIT
 const MANDATORY_FIT = /\b(mandatory|mfit|rt|remedial)\b/;
 const VOLUNTARY_FIT = /\b(ipt|vfit|voluntary)\b|\bns ?fit\b/;
-// Track column value -> "mandatory" / "voluntary" (on NS FIT), "normal" (blank or "normal"), or "other"
+// Track column value -> "mandatory" / "voluntary" (on NS FIT), "normal" (blank, "normal" or "IPPT Window"), or "other"
 function trackOf(rec) {
   const w = wordsOf(cellOf(rec, cols.track));
-  return MANDATORY_FIT.test(w) ? "mandatory" : VOLUNTARY_FIT.test(w) ? "voluntary" : !w || /\bnormal\b/.test(w) ? "normal" : "other";
+  return MANDATORY_FIT.test(w) ? "mandatory" : VOLUNTARY_FIT.test(w) ? "voluntary" : !w || /\b(normal|ippt window)\b/.test(w) ? "normal" : "other";
 }
 const onNsFit = rec => ["mandatory", "voluntary"].includes(trackOf(rec));
 // {fit} in messages: "mandatory NSFIT" / "voluntary NSFIT"
 const fitText = rec => onNsFit(rec) ? `${trackOf(rec)} NSFIT` : "NSFIT";
-const isNumber = v => /^\d+(\.\d+)?$/.test(v);   // a bare number
 const NOT_ATTEMPTED = /^(not attempted|not attempt|not yet attempted|not yet|not done|not taken|no|nil|na|n a|nt|pending|unattempted|absent)$/;
 
 function ipptStatus(rec) {
@@ -1076,181 +1063,169 @@ function priorityOf(rec) {
 }
 
 /* =====================================================================
-   6. READING FILES (.xlsx without libraries, .csv)
+   6. GOOGLE SHEETS (the only code that talks to the network)
    ===================================================================== */
-function parseCSV(text) {
-  text = text.replace(/^\uFEFF/, "");
-  const firstLine = text.split("\n")[0];
-  const delim = (firstLine.match(/\t/g) || []).length > (firstLine.match(/,/g) || []).length ? "\t" : ",";
-  const out = [];
-  let row = [], cell = "", quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (quoted) {
-      if (c !== '"') cell += c;
-      else if (text[i + 1] === '"') { cell += '"'; i++; }
-      else quoted = false;
-    } else if (c === '"') quoted = true;
-    else if (c === delim) { row.push(cell); cell = ""; }
-    else if (c === "\n" || c === "\r") {
-      if (c === "\r" && text[i + 1] === "\n") i++;
-      row.push(cell); out.push(row); row = []; cell = "";
-    } else cell += c;
-  }
-  if (cell !== "" || row.length) { row.push(cell); out.push(row); }
-  return out;
-}
-
-async function inflateRaw(bytes) {
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-
-// Minimal zip reader: lists entries and returns an entry's text.
-async function unzip(buf) {
-  const dv = new DataView(buf), u8 = new Uint8Array(buf), td = new TextDecoder();
-  let eocd = -1;
-  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) {
-    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
-  }
-  if (eocd < 0) throw new Error("Not a valid .xlsx (zip) file");
-  const files = {};
-  let p = dv.getUint32(eocd + 16, true);
-  for (let n = dv.getUint16(eocd + 10, true); n > 0 && dv.getUint32(p, true) === 0x02014b50; n--) {
-    const nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), commentLen = dv.getUint16(p + 32, true);
-    files[td.decode(u8.subarray(p + 46, p + 46 + nameLen))] =
-      { method: dv.getUint16(p + 10, true), size: dv.getUint32(p + 20, true), offset: dv.getUint32(p + 42, true) };
-    p += 46 + nameLen + extraLen + commentLen;
+// Sign-in uses Google Identity Services (token client); data goes through the Sheets API v4.
+// The access token lives in this closure only: never stored, gone when the page closes.
+// Always call gsheets.x(...), never destructure, so tests can swap in a mock: Object.assign(gsheets, mock).
+const gsheets = (() => {
+  let token = null, gsi = null;
+  const fail = kind => Object.assign(new Error(kind), { kind });
+  // Google's sign-in script is added to the page only here, when the CO asks to sign in.
+  const loadGsi = () => gsi ||= new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.onload = resolve;
+    s.onerror = () => { gsi = null; s.remove(); reject(fail("offline")); };
+    document.head.appendChild(s);
+  });
+  async function api(path, init = {}) {
+    let res;
+    try {
+      res = await fetch(SHEETS_API + path, { ...init,
+        headers: { Authorization: "Bearer " + token, ...(init.body ? { "Content-Type": "application/json" } : {}) } });
+    } catch { throw fail("offline"); }
+    if (!res.ok) {
+      if (res.status === 401) token = null;            // expired: the next signIn asks Google again
+      const text = await res.text().catch(() => "");
+      let msg = text;
+      try { msg = JSON.parse(text).error.message; } catch {}
+      throw Object.assign(new Error(msg || res.statusText || "Google Sheets error " + res.status), { status: res.status });
+    }
+    return res.json();
   }
   return {
-    names: Object.keys(files),
-    async text(name) {
-      const f = files[name];
-      if (!f) return null;
-      const start = f.offset + 30 + dv.getUint16(f.offset + 26, true) + dv.getUint16(f.offset + 28, true);
-      const data = u8.subarray(start, start + f.size);
-      return td.decode(f.method === 0 ? data : await inflateRaw(data));
+    // Resolves once a token is held.
+    async signIn() {
+      if (token) return;
+      if (location.protocol === "file:") throw fail("fileUrl");
+      if (GOOGLE_CLIENT_ID.startsWith("PASTE_")) throw fail("noClient");
+      if (!navigator.onLine) throw fail("offline");
+      await loadGsi();
+      await new Promise((resolve, reject) => {
+        google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID, scope: SHEETS_SCOPE,
+          callback: r => {
+            if (r.access_token) { token = r.access_token; resolve(); }
+            else reject(r.error === "access_denied" ? fail("cancelled") : new Error(r.error_description || r.error || "Sign-in failed."));
+          },
+          error_callback: e => reject(fail(e && e.type === "popup_failed_to_open" ? "blocked" : "cancelled")),
+        }).requestAccessToken();
+      });
+    },
+    // -> { title, sheets: [{ title, sheetId, columnCount }] }
+    async meta(id) {
+      const r = await api(`${id}?fields=properties.title,sheets.properties`);
+      return {
+        title: r.properties.title,
+        sheets: (r.sheets || []).map(s => ({
+          title: s.properties.title, sheetId: s.properties.sheetId, columnCount: (s.properties.gridProperties || {}).columnCount || 0 })),
+      };
+    },
+    // Cells as shown in the sheet (dates as displayed, e.g. d/m/yyyy) -> string[][]
+    async read(id, range) {
+      return (await api(`${id}/values/${encodeURIComponent(range)}?valueRenderOption=FORMATTED_VALUE`)).values || [];
+    },
+    // Several ranges in one call -> one string[][] per range, in order
+    async readMany(id, ranges) {
+      const r = await api(`${id}/values:batchGet?valueRenderOption=FORMATTED_VALUE` + ranges.map(x => "&ranges=" + encodeURIComponent(x)).join(""));
+      return (r.valueRanges || []).map(v => v.values || []);
+    },
+    // raw: text as is; otherwise Sheets reads it as if typed (an ISO date becomes a real date)
+    async write(id, range, values, raw) {
+      return api(`${id}/values/${encodeURIComponent(range)}?valueInputOption=${raw ? "RAW" : "USER_ENTERED"}`,
+        { method: "PUT", body: JSON.stringify({ values }) });
+    },
+    async addColumns(id, sheetId, n) {
+      return api(`${id}:batchUpdate`, { method: "POST",
+        body: JSON.stringify({ requests: [{ appendDimension: { sheetId, dimension: "COLUMNS", length: n } }] }) });
     },
   };
+})();
+
+// Google / sign-in errors in plain words.
+function plainError(e) {
+  const kind = e && e.kind, status = e && e.status;
+  if (kind === "noClient") return "Google sign-in is not set up yet (no client ID).";
+  if (kind === "fileUrl") return "Open https://transcom.gyanroh.com to use Google Sheets";
+  if (kind === "cancelled") return "Sign-in was cancelled.";
+  if (kind === "blocked") return "The sign-in popup was blocked. Allow popups for this site and try again.";
+  if (kind === "offline") return "You seem to be offline.";
+  if (kind === "noTab") return "This sheet has no IPPT tab.";
+  if (status === 401) return "Your Google sign-in has expired. Sign in again.";
+  if (status === 403) return "No access to this sheet. Ask the owner to share it with your Google account.";
+  if (status === 404) return "Sheet not found. Check the link.";
+  return String((e && e.message) || e);
 }
 
-function colIndex(ref) {
-  let n = 0;
-  for (const ch of /^([A-Z]+)/.exec(ref)[1]) n = n * 26 + ch.charCodeAt(0) - 64;
-  return n - 1;
+// A full sheet link (.../spreadsheets/d/<id>/edit...) or a bare id -> id, else "".
+function sheetIdFrom(text) {
+  const m = /\/spreadsheets\/d\/([A-Za-z0-9_-]+)/.exec(text);
+  if (m) return m[1];
+  const t = String(text).trim();
+  return /^[A-Za-z0-9_-]{20,}$/.test(t) ? t : "";
 }
 
-// Returns {sheets: [{name, rows}], meta} for every visible sheet.
-async function parseXLSX(buf) {
-  const zip = await unzip(buf);
-  const parser = new DOMParser();
-  const xml = async name => { const t = await zip.text(name); return t ? parser.parseFromString(t, "application/xml") : null; };
-
-  const shared = [];
-  const sst = await xml("xl/sharedStrings.xml");
-  if (sst) for (const si of sst.getElementsByTagName("si")) shared.push([...si.getElementsByTagName("t")].map(t => t.textContent).join(""));
-  const dateStyles = readDateStyles(await xml("xl/styles.xml"));
-  const sheets = await listSheets(zip, xml);
-
-  const dataSheets = sheets.filter(s => s.name !== META_SHEET && !s.hidden);
-  if (!dataSheets.length) throw new Error("No worksheet found in file");
-  const out = [];
-  for (const s of dataSheets) out.push({ name: s.name, rows: readSheet(await xml(s.path), shared, dateStyles) });
-
-  const meta = {};
-  const metaSheet = sheets.find(s => s.name === META_SHEET);
-  if (metaSheet) for (const [k, v] of readSheet(await xml(metaSheet.path), shared, new Map())) if (k) meta[k] = v;
-  return { sheets: out, meta };
+// Recent sheets on this device, most recent first: ids + titles only.
+const RECENT_MAX = 5;
+const loadRecent = () => { const list = store.load(STORE.sheets, []); return Array.isArray(list) ? list : []; };
+function rememberSheet(id, title) {
+  store.save(STORE.sheets, [{ id, title }, ...loadRecent().filter(s => s.id !== id)].slice(0, RECENT_MAX));
+  renderRecent();
+}
+function renderRecent() {
+  $("gateRecent").innerHTML = loadRecent()
+    .map(s => `<button class="chip" data-id="${esc(s.id)}" title="${esc(s.title || s.id)}">Recent: ${esc(s.title || s.id)}</button>`).join("");
 }
 
-// Sheet names and their file paths, via the workbook relationships.
-async function listSheets(zip, xml) {
-  const sheets = [];
-  const wb = await xml("xl/workbook.xml"), rels = await xml("xl/_rels/workbook.xml.rels");
-  if (wb && rels) {
-    const targets = {};
-    for (const r of rels.getElementsByTagName("Relationship")) {
-      const t = r.getAttribute("Target");
-      targets[r.getAttribute("Id")] = t.startsWith("/") ? t.slice(1) : "xl/" + t.replace(/^\.\//, "");
-    }
-    for (const s of wb.getElementsByTagName("sheet")) {
-      const rid = s.getAttribute("r:id") || s.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
-      if (targets[rid] && zip.names.includes(targets[rid]))
-        sheets.push({ name: s.getAttribute("name"), path: targets[rid], hidden: /hidden/i.test(s.getAttribute("state") || "") });
-    }
+// A1 ranges, built only here so a test mock can parse them. Tab names are quoted ('IPPT'!B7).
+const tabRange = (a1 = "", tab = doc.tab) => `'${tab.replace(/'/g, "''")}'` + (a1 ? "!" + a1 : "");
+const cellA1 = (col, row) => colName(col) + row;                      // 0-based column, 1-based row
+const rowRange = row => `${row}:${row}`;                              // the whole row, however wide the sheet is now
+const gridColOf = col => doc.keep[sourceSheets[0].map.indexOf(col)];  // headers index -> 0-based sheet column
+
+// The loaded sheet. rowOf[idx] = 1-based sheet row of combined row idx: combineSheets drops blank rows,
+// so walk the values the same way (first non-blank row = header, every later non-blank row = a body row).
+// header = the header row as loaded (trimmed, no trailing blanks): before a write it is compared with the sheet's.
+// keep / logAt (grid columns of the kept and "reminder sent" columns) are filled in by loadData from combineSheets.
+function buildDoc(id, title, tab, values) {
+  const filled = r => (r || []).some(c => String(c ?? "").trim() !== "");
+  const rowOf = [];
+  let header = null, headerRow = 0;
+  values.forEach((r, i) => { if (!filled(r)) return; if (header) rowOf.push(i + 1); else { header = r; headerRow = i + 1; } });
+  header = (header || []).map(h => String(h ?? "").trim());
+  while (header.length && header[header.length - 1] === "") header.pop();
+  return { id, title, tab: tab.title, sheetId: tab.sheetId, columnCount: tab.columnCount, header, headerRow, rowOf, keep: [], logAt: {} };
+}
+
+// Sign in, read only the IPPT tab, open it.
+async function loadFromGoogle(idOrLink) {
+  const showErr = msg => { $("gateErr").innerHTML = $("status").innerHTML = `<span class="warn">ERROR</span> ${esc(msg)}`; };
+  const id = sheetIdFrom(idOrLink);
+  if (!id) { showErr("Paste a Google Sheets link"); return; }
+  setBoarding(true);
+  try {
+    await gsheets.signIn();
+    const meta = await gsheets.meta(id);
+    const tab = meta.sheets.find(s => s.title.trim().toLowerCase() === "ippt");
+    if (!tab) throw { kind: "noTab" };
+    const values = await gsheets.read(id, tabRange("", tab.title));
+    const newDoc = buildDoc(id, meta.title, tab, values);
+    openSheets([{ name: tab.title, rows: values }], meta.title, false, newDoc);
+    rememberSheet(id, meta.title);
+    toast(`Loaded ${records.length} records`);
+  } catch (e) {
+    showErr(plainError(e));
+  } finally {
+    setBoarding(false);
   }
-  if (sheets.length) return sheets;
-  const first = zip.names.filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort()[0];
-  return first ? [{ name: "Sheet1", path: first, hidden: false }] : [];
-}
-
-// Style index -> "date" | "month" for cells whose number format is a date.
-function readDateStyles(st) {
-  const map = new Map();
-  const xfs = st && st.getElementsByTagName("cellXfs")[0];
-  if (!xfs) return map;
-  const custom = {};
-  for (const f of st.getElementsByTagName("numFmt")) custom[f.getAttribute("numFmtId")] = f.getAttribute("formatCode") || "";
-  [...xfs.getElementsByTagName("xf")].forEach((xf, i) => {
-    const id = +xf.getAttribute("numFmtId");
-    if ((id >= 14 && id <= 17) || id === 22) { map.set(i, id === 17 ? "month" : "date"); return; }
-    const code = (custom[id] || "").replace(/"[^"]*"|\[[^\]]*\]|\\./g, "").toLowerCase();
-    if (/[dy]/.test(code)) map.set(i, /d/.test(code) ? "date" : "month");
-  });
-  return map;
-}
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function serialToText(n, kind) {
-  const d = serialToUtc(n);
-  if (isNaN(d)) return String(n);
-  return kind === "month"
-    ? `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`
-    : `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${d.getUTCFullYear()}`;
-}
-
-function cellText(c, shared, dateStyles) {
-  const type = c.getAttribute("t");
-  if (type === "inlineStr") return [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
-  const v = c.getElementsByTagName("v")[0];
-  if (!v) return "";
-  const val = v.textContent;
-  if (type === "s") return shared[parseInt(val, 10)] ?? "";
-  if (type === "e") return "";                         // Excel error such as #N/A: no value
-  if ((type && type !== "n") || val === "" || !isFinite(Number(val))) return val;
-  const kind = dateStyles.get(+(c.getAttribute("s") || 0));
-  if (kind) return serialToText(Number(val), kind);
-  if (/e/i.test(val)) return BigInt(Math.round(Number(val))).toString();   // phone numbers stored as 9.1234567E7
-  return val.replace(/^(-?\d+)\.0+$/, "$1");
-}
-
-function readSheet(sheetXml, shared, dateStyles) {
-  return [...sheetXml.getElementsByTagName("row")].map(rowEl => {
-    const arr = [];
-    for (const c of rowEl.getElementsByTagName("c")) {
-      const ref = c.getAttribute("r");
-      arr[ref ? colIndex(ref) : arr.length] = cellText(c, shared, dateStyles);
-    }
-    return Array.from(arr, v => v ?? "");
-  });
-}
-
-async function readFileAsSheets(file) {
-  const ext = file.name.split(".").pop().toLowerCase();
-  if (ext === "xlsx") {
-    if (typeof DecompressionStream === "undefined")
-      throw new Error("This browser is too old to open .xlsx files. Please update Chrome, Edge or Safari (iPhone/iPad: iOS 16.4 or later).");
-    return parseXLSX(await file.arrayBuffer());
-  }
-  if (["csv", "tsv", "txt"].includes(ext)) return { sheets: [{ name: "Data", rows: parseCSV(await file.text()) }], meta: {} };
-  throw new Error("Please use a .xlsx or .csv file (.xls must be re-saved as .xlsx in Excel)");
 }
 
 /* =====================================================================
    7. COMBINING SHEETS INTO ONE LIST
    ===================================================================== */
 // All sheets become one list (columns matched by header name, plus a "Sheet" column).
-// The original layout is kept so export writes the same sheets back.
+// The original layout is kept so writes go to the right column of the sheet.
 // Our "reminder sent" columns are split out into logs.
 // Loose match across sheets: case, punctuation and a plural "s" are ignored ("Contact No." = "Contact No", "Results" = "Result").
 // Headers with no a-z/0-9 (e.g. Chinese) are matched exactly.
@@ -1280,7 +1255,7 @@ function combineSheets(sheetList) {
     parts.push({
       name: sh.name, keep, logAt,
       headers: keep.map(i => hdr[i]),
-      map: keep.map(i => hdr[i] ? addHeader(hdr[i], usedInSheet) : NO_COL),     // unnamed columns: kept for export only
+      map: keep.map(i => hdr[i] ? addHeader(hdr[i], usedInSheet) : NO_COL),     // unnamed columns: kept in the layout, never shown
       body: table.slice(1).map(r => Array.from({ length: width }, (_, i) => String(r[i] ?? "").trim())),
     });
   }
@@ -1289,7 +1264,7 @@ function combineSheets(sheetList) {
 
   const result = { headers: combined, rows: [], sheets: [], sourceRows: [], logs: [] };
   parts.forEach((p, sheetIdx) => {
-    result.sheets.push({ name: p.name, headers: p.headers, map: p.map });
+    result.sheets.push({ name: p.name, headers: p.headers, map: p.map, keep: p.keep, logAt: p.logAt });
     for (const r of p.body) {
       const cells = p.keep.map(i => r[i]);
       const row = new Array(combined.length).fill("");
@@ -1298,7 +1273,7 @@ function combineSheets(sheetList) {
       const log = {};
       for (const tab of TABS) if (p.logAt[tab] !== undefined) log[tab] = parseLogTime(r[p.logAt[tab]]);
       result.rows.push(row);
-      result.sourceRows.push({ sheet: sheetIdx, cells });
+      result.sourceRows.push({ sheet: sheetIdx });
       result.logs.push(log);
     }
   });
@@ -1334,29 +1309,32 @@ function buildRecords() {
 /* =====================================================================
    9. LOADING DATA
    ===================================================================== */
-function loadData(sheetList, label, meta, isDemo) {
+// newDoc: the Google sheet the rows came from (see buildDoc); null for sample data.
+// keepView: a refresh of the same sheet; the CO's place (tab, filters, ticket, undo, batch) stays (see keepViews).
+function loadData(sheetList, label, { isDemo = false, doc: newDoc = null, keepView = false } = {}) {
   const data = combineSheets(sheetList);
   const found = detectColumns(data.headers);
-  // checked before anything is replaced, so a wrong file leaves the current list on screen
+  // checked before anything is replaced, so a wrong sheet leaves the current list on screen
   if (!data.rows.some(r => (r[found.name] || "").trim() || (r[found.phone] || "").trim()))
     throw new Error("No names or HP numbers found. Check the sheet has a name column and an HP column with values.");
-  if (demoMode && !isDemo) { actions = store.load(STORE.actions, {}); edits = store.load(STORE.edits, {}); }   // forget sample-data work
+  if (demoMode && !isDemo) actions = store.load(STORE.actions, {});   // forget sample-data work
   headers = data.headers; rows = data.rows; sourceSheets = data.sheets; sourceRows = data.sourceRows;
-  savedRows = rows.map(r => r.slice());
-  fileMeta = meta || {}; fileName = sourceFileName = label; demoMode = isDemo;
-  saveHandle = null; clearTimeout(autoSaveTimer);         // never auto-save the previous file's changes
-  loadCount++;                                            // saves still in progress for the previous file are ignored
+  sourceTitle = label; demoMode = isDemo;
+  doc = newDoc;
+  if (doc) { doc.keep = data.sheets[0].keep; doc.logAt = data.sheets[0].logAt; }   // one tab only
   cols = found;
   buildRecords();
-  fileActions = {};
-  for (const rec of records) mergeLatest(fileActions, rec.key, data.logs[rec.idx]);
-  applyFileSettings();
-  resetViews();
+  if (doc) replayQueuedEdits();   // edits not written yet: the sheet still shows the old value
+  adoptSheetLog(data.logs);
+  applyFyFromHeaders();
+  if (keepView) keepViews(); else resetViews();
   $("status").innerHTML = isDemo
     ? `<span class="warn">SAMPLE DATA</span> &middot; ${records.length} made-up records`
-    : `<span class="ok">LOADED</span> ${esc(label)} &middot; ${records.length} records` +
-      (fileMeta.savedAt ? ` &middot; last saved by this app ${esc(fmtWhen(Date.parse(fileMeta.savedAt)))}` : "") +
+    : `<span class="ok">LOADED</span> ${esc(label)} &middot; ${doc ? "IPPT tab &middot; " : ""}${records.length} records` +
+      (keepView ? ` &middot; refreshed ${fmtLogTime(Date.now()).slice(11)}` : "") +
       missingColumns().map(m => `<br><span class="warn">Check: ${esc(m)}</span>`).join("");
+  $("refresh").hidden = !doc;   // sample data: nothing to re-read
+  if (doc && !keepView) flushQueue();   // writes that waited for this sheet (a refresh flushes once it is done)
 }
 
 // A key column missing from one sheet makes that sheet's people look blank (e.g. everyone NSFIT), so say so.
@@ -1365,28 +1343,46 @@ function missingColumns() {
   return sourceSheets.flatMap(s => keyCols.filter(c => !s.map.includes(c)).map(c => `sheet "${s.name}" has no "${headers[c]}" column`));
 }
 
-// Load, check for newer work on this device, then open the app.
-async function openSheets(sheetList, label, meta, isDemo) {
-  loadData(sheetList, label, meta, isDemo);
-  await reconcile();
+// Load, then open the app. openSheets(rows, "x") loads made-up data with no Google writes.
+function openSheets(sheetList, label, isDemo = false, newDoc = null) {
+  loadData(sheetList, label, { isDemo, doc: newDoc });
   closeGate();
 }
 
-async function handleFile(file) {
-  if (!$("conflict").hidden) { toast("First choose Keep or Use file in the popup"); return; }   // the popup belongs to the current load
-  setBoarding(true);
+// Re-reads the IPPT tab of the loaded sheet (Refresh button, back after 5 minutes away, a moved row on write).
+// The CO keeps their place; queued writes stay and are retried afterwards. Not while a ticket field is open.
+// Returns true when the sheet was re-read.
+let refreshing = false;
+async function refreshSheet() {
+  if (!doc || refreshing) return false;
+  if ($("fields").querySelector(".edit-in")) { toast("Finish editing first"); return false; }
+  refreshing = true;
+  $("refresh").disabled = true;
   try {
-    const { sheets, meta } = await readFileAsSheets(file);
-    setBoarding(false);                          // before the outdated-file popup, which waits for the CO
-    await openSheets(sheets, file.name, meta, false);
-    toast(`Loaded ${records.length} records` + (sourceSheets.length > 1 ? ` from ${sourceSheets.length} sheets` : ""));
+    const values = await gsheets.read(doc.id, tabRange());
+    const newDoc = buildDoc(doc.id, doc.title, { title: doc.tab, sheetId: doc.sheetId, columnCount: doc.columnCount }, values);
+    loadData([{ name: doc.tab, rows: values }], doc.title, { doc: newDoc, keepView: true });
   } catch (e) {
-    const msg = `<span class="warn">ERROR</span> ${esc(e.message || e)}`;
-    $("gateErr").innerHTML = msg;
-    $("status").innerHTML = msg;
+    if (e && e.status === 401) { needSignIn = true; updateSyncBar(); }   // the sync bar offers "Sign in again" (needs a click)
+    toast(plainError(e));
+    return false;
   } finally {
-    setBoarding(false);
+    refreshing = false;
+    $("refresh").disabled = false;
   }
+  flushQueue();
+  return true;
+}
+
+// Back after 5 minutes or more away (other tab or app, screen locked): re-read the sheet. No polling timers.
+// visibilitychange and blur/focus both fire on a switch: the first return clears hiddenAt, so only one read.
+const AWAY_MS = 5 * 60000;
+let hiddenAt = 0;
+const wentAway = () => { if (!hiddenAt) hiddenAt = Date.now(); };
+function maybeRefresh() {
+  const away = hiddenAt && Date.now() - hiddenAt >= AWAY_MS;
+  hiddenAt = 0;
+  if (doc && away) refreshSheet();
 }
 
 /* =====================================================================
@@ -1395,66 +1391,65 @@ async function handleFile(file) {
 const sentAt = (rec, tab) => (actions[rec.key] || {})[tab] || 0;
 const saveActions = () => { if (!demoMode) store.save(STORE.actions, actions); };   // sample data is never stored
 
+// A send: the row updates at once, the device log keeps it, then the stamp goes to the sheet through the write queue.
 function recordAction(rec, tab) {
-  (actions[rec.key] ||= {})[tab] = minuteNow();
+  const ts = minuteNow();
+  (actions[rec.key] ||= {})[tab] = ts;
   saveActions();
   dataChanged(tab === view.tab ? { sentTo: rec } : {});
+  if (doc && !demoMode) queueWrite({ kind: "stamp", key: rec.key, name: rec.name, phone: rec.phone, tab, value: fmtLogTime(ts), raw: true });
 }
 
-// Reminders on this device that the loaded file does not contain yet.
-function unsentActions() {
-  const out = [], seen = new Set();
+// The sheet is the reminder log. On every load: a stamp in the sheet wins; a device-only stamp stays
+// only while a queued write will put it there; any other device-only stamp is dropped.
+function adoptSheetLog(logs) {
+  const queued = new Set(doc ? queue.filter(q => q.doc === doc.id && q.kind === "stamp").map(q => q.key + "|" + q.tab) : []);
   for (const rec of records) {
-    if (seen.has(rec.key)) continue;
-    seen.add(rec.key);
+    const log = logs[rec.idx] || {}, mine = actions[rec.key];
     for (const tab of TABS) {
-      const mine = sentAt(rec, tab), inFile = (fileActions[rec.key] || {})[tab] || 0;
-      if (mine > inFile) out.push({ rec, tab, ts: mine });
+      if (log[tab]) (actions[rec.key] ||= {})[tab] = log[tab];
+      else if (mine && !queued.has(rec.key + "|" + tab)) delete mine[tab];
     }
+    if (mine && !Object.keys(mine).length) delete actions[rec.key];
   }
-  return out;
+  saveActions();
 }
 
 /* =====================================================================
    11. FIELD EDITS
    ===================================================================== */
-const saveEdits = () => { if (!demoMode) store.save(STORE.edits, edits); };
-// Edits are stored under the person's name+HP as they are in the file, so they can be matched on reload.
-const fileKeyOf = idx => personKey(savedRows[idx][cols.name] || "", savedRows[idx][cols.phone] || "");
-
 // Only real columns of the person's own sheet can be edited (not the "Sheet" label).
 function isEditable(rec, col) {
   const src = sourceRows[rec.idx];
   return !!src && sourceSheets[src.sheet].map.includes(col);
 }
 
-// Writes a value into the row and its export copy. Keeps reminders attached if name/HP change.
+// Writes a value into the row. Keeps reminders and queued writes attached if name/HP change.
 function applyCell(rec, col, value) {
   rows[rec.idx][col] = value;
-  const src = sourceRows[rec.idx], j = sourceSheets[src.sheet].map.indexOf(col);
-  if (j >= 0) src.cells[j] = value;
   if (col !== cols.name && col !== cols.phone) return;
   const oldKey = rec.key;
   setIdentity(rec);
   if (oldKey === rec.key) return;
   mergeLatest(actions, rec.key, actions[oldKey]);
-  mergeLatest(fileActions, rec.key, fileActions[oldKey]);
   saveActions();
+  if (doc) for (const q of queue) if (q.doc === doc.id && q.key === oldKey) q.key = rec.key;   // name/phone stay as the sheet has them (row check)
 }
 
-// Ctrl+Z on the Find tab walks back through these (cleared when another file is loaded).
+// Ctrl+Z on the Find tab walks back through these (cleared when another sheet is loaded).
 const undoStack = [];
 
-// User edit: returns true if the value changed.
-function setCell(rec, col, value, { undoable = true } = {}) {
+// User edit: applied here at once, written to the sheet through the queue. Returns true if the value changed.
+// raw = false lets Sheets read the value as typed (an ISO date becomes a real date).
+function setCell(rec, col, value, { undoable = true, raw = true } = {}) {
   value = String(value).trim();
   const before = rows[rec.idx][col] || "";
   if (before === value) return false;
   if (undoable) undoStack.push({ rec, col, before });
-  const key = fileKeyOf(rec.idx);
-  (edits[key] ||= {})[headers[col].toLowerCase()] = { v: value, ts: Date.now() };
-  saveEdits();
+  const item = { kind: "cell", key: rec.key, name: rec.name, phone: rec.phone, header: headers[col], value, raw };   // identity before the edit: the row as the sheet has it
   applyCell(rec, col, value);
+  item.key = rec.key;
+  if (doc && !demoMode) queueWrite(item);
   dataChanged();
   return true;
 }
@@ -1462,272 +1457,156 @@ function setCell(rec, col, value, { undoable = true } = {}) {
 function undoLastEdit() {
   const last = undoStack.pop();
   if (!last) { toast("Nothing to undo"); return; }
-  setCell(last.rec, last.col, last.before, { undoable: false });
+  // an IPPT Date goes back as ISO + USER_ENTERED, so the sheet gets a real date again (not "18/5/2026" text); a session count as a number
+  const iso = isDateCol(last.col) && isoDate(last.before);
+  const typed = !!iso || (last.col === cols.nsfit && /^\d+$/.test(last.before));
+  setCell(last.rec, last.col, iso || last.before, { undoable: false, raw: !typed });
   showResult(last.rec, true);
   toast(`Undid ${headers[last.col]}`);
 }
 
-function changedCellCount() {
-  let n = 0;
-  rows.forEach((r, i) => r.forEach((v, c) => { if ((v || "") !== (savedRows[i][c] || "")) n++; }));
-  return n;
-}
-
-// Edits on this device newer than the loaded file.
-function pendingEdits() {
-  const savedAt = fileMeta.savedAt ? Date.parse(fileMeta.savedAt) : 0;
-  const lowerHeaders = headers.map(h => h.toLowerCase());
-  const out = [];
-  for (const rec of records) {
-    for (const [h, { v, ts }] of Object.entries(edits[rec.key] || {})) {
-      const col = lowerHeaders.indexOf(h);
-      const alreadyInFile = (rows[rec.idx][col] || "") === v || (savedAt && savedAt >= ts);
-      if (col >= 0 && isEditable(rec, col) && !alreadyInFile) out.push({ rec, col, v, ts, key: rec.key, header: h });
-    }
-  }
-  return out;
-}
-
 /* =====================================================================
-   12. OUTDATED-FILE CHECK
+   12. SYNC: write queue
    ===================================================================== */
-// If this device has reminders or edits the file lacks, ask before using the file.
-async function reconcile() {
-  const unsent = unsentActions(), edited = pendingEdits();
-  const total = unsent.length + edited.length;
-  const keepMine = () => {
-    for (const e of edited) applyCell(e.rec, e.col, e.v);
-    for (const [key, logs] of Object.entries(fileActions)) mergeLatest(actions, key, logs);
-    saveActions();
-    dataChanged();
-  };
-  const useFile = () => {
-    for (const rec of records) {
-      if (fileActions[rec.key]) actions[rec.key] = { ...fileActions[rec.key] };
-      else delete actions[rec.key];
-    }
-    for (const e of edited) {
-      delete edits[e.key][e.header];
-      if (!Object.keys(edits[e.key]).length) delete edits[e.key];
-    }
-    saveActions(); saveEdits();
-    dataChanged();
-  };
-  if (!total) { keepMine(); return; }
+// Everything the app changes reaches the sheet through this queue: a "stamp" (reminder sent) or a "cell" (ticket edit).
+// Item: { doc, key, name, phone, kind, tab (stamp) | header (cell), value, raw, ts, error? }. name / phone are the row
+// as the sheet had it when the item was queued: before a write the row is read back and must still be that person.
+// Sample data queues nothing.
+const saveQueue = () => { if (!demoMode) store.save(STORE.queue, queue); };
+const queuedCell = (rec, col) => doc && queue.find(q => q.doc === doc.id && q.key === rec.key && q.kind === "cell" && q.header === headers[col]);
 
-  const lines = [
-    ...edited.map(e => `<li>${esc(e.rec.name)}: ${esc(headers[e.col])} changed to &ldquo;${esc(e.v)}&rdquo;, ${esc(fmtWhen(e.ts))}</li>`),
-    ...unsent.map(u => `<li>${esc(u.rec.name)}: ${TAB_LABEL[u.tab]} reminder sent, ${esc(fmtWhen(u.ts))}</li>`),
-  ];
-  $("cfCount").textContent = total;
-  $("cfDate").textContent = fmtWhen(Math.max(...unsent.map(u => u.ts), ...edited.map(e => e.ts)));
-  $("cfList").innerHTML = lines.slice(0, 8).join("") + (lines.length > 8 ? `<li>...and ${lines.length - 8} more</li>` : "");
-  $("conflict").hidden = false;
-  return new Promise(resolve => {
-    $("cfKeep").onclick = () => { $("conflict").hidden = true; keepMine(); toast("Kept your edits"); resolve(); };
-    $("cfOverride").onclick = () => {
-      if (!confirm(`Discard ${total} update(s) made on this device and use the file as-is?`)) return;
-      $("conflict").hidden = true; useFile(); toast("Using file as-is"); resolve();
-    };
-  });
-}
-
-/* =====================================================================
-   13. SAVING (Excel writer, download, auto-save)
-   ===================================================================== */
-// reminders + edited cells not in the file, plus 1 if name / FY / wording changed since the last save
-const unsavedCount = () => unsentActions().length + changedCellCount() + (settingsEdited() ? 1 : 0);
-
-function updateSaveBar() {
-  const n = unsavedCount();
-  document.body.classList.toggle("has-unsaved", n > 0);
-  $("saveBar").hidden = n === 0;
-  $("saveCount").textContent = n;
-  $("saveWord").textContent = n === 1 ? "update" : "updates";
-  $("dlState").innerHTML = (n ? `<span class="warn">${plural(n, "update")} not in your Excel yet</span>` : `<span class="ok">Excel is up to date</span>`) +
-    (saveHandle ? ` &middot; auto-saving to <b>${esc(saveHandle.name)}</b>` : "");
-}
-
-// --- zip (stored, no compression) ---
-const CRC_TABLE = (() => {
-  const t = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
-  return t;
-})();
-function crc32(u8) {
-  let c = 0xffffffff;
-  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xff] ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
-
-function zipStore(files) {
-  const enc = new TextEncoder(), parts = [], central = [];
-  const now = new Date();
-  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
-  const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
-  let offset = 0;
-  for (const f of files) {
-    const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
-    const local = new DataView(new ArrayBuffer(30));
-    local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true); local.setUint16(6, 0x0800, true);
-    local.setUint16(10, dosTime, true); local.setUint16(12, dosDate, true); local.setUint32(14, crc, true);
-    local.setUint32(18, data.length, true); local.setUint32(22, data.length, true); local.setUint16(26, name.length, true);
-    parts.push(new Uint8Array(local.buffer), name, data);
-    const dir = new DataView(new ArrayBuffer(46));
-    dir.setUint32(0, 0x02014b50, true); dir.setUint16(4, 20, true); dir.setUint16(6, 20, true); dir.setUint16(8, 0x0800, true);
-    dir.setUint16(12, dosTime, true); dir.setUint16(14, dosDate, true); dir.setUint32(16, crc, true);
-    dir.setUint32(20, data.length, true); dir.setUint32(24, data.length, true); dir.setUint16(28, name.length, true);
-    dir.setUint32(42, offset, true);
-    central.push(new Uint8Array(dir.buffer), name);
-    offset += 30 + name.length + data.length;
+// After a load or refresh the rows are the sheet's, which still has the old value of any edit not written yet:
+// put those edits back on screen (a name / HP edit re-keys the person again, as it did the first time).
+function replayQueuedEdits() {
+  for (const q of queue) {
+    if (q.doc !== doc.id || q.kind !== "cell") continue;
+    const rec = records.find(r => r.key === q.key) || records.find(r => r.key === personKey(q.name, q.phone));
+    const col = headers.indexOf(q.header);
+    if (rec && col >= 0 && isEditable(rec, col)) applyCell(rec, col, q.value);
   }
-  const end = new DataView(new ArrayBuffer(22));
-  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
-  end.setUint32(12, central.reduce((s, p) => s + p.length, 0), true); end.setUint32(16, offset, true);
-  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: XLSX_MIME });
 }
 
-// --- worksheet xml ---
-const xmlEsc = s => String(s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "")
-  .replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-function colName(i) {
-  let s = "";
-  for (i++; i; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s;
-  return s;
-}
-const STYLE_BOLD = 1, STYLE_DATE = 2;
-
-function cellXml(value, ref, isHeader) {
-  const v = String(value ?? "");
-  if (v === "") return "";
-  const style = isHeader ? ` s="${STYLE_BOLD}"` : "";
-  if (/^-?(0|[1-9]\d{0,14})(\.\d+)?$/.test(v)) return `<c r="${ref}"${style}><v>${v}</v></c>`;
-  const dmy = !isHeader && /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);       // d/m/yyyy back to a real date
-  if (dmy) {
-    const [, d, m, y] = dmy.map(Number);
-    if (isRealDate(y, m, d)) return `<c r="${ref}" s="${STYLE_DATE}"><v>${dateToSerial(y, m, d)}</v></c>`;
+function queueWrite(item) {
+  item.doc = doc.id; item.ts = Date.now();
+  if (item.kind === "cell") {   // a newer edit of the same cell replaces one still waiting (and keeps its row check)
+    const i = queue.findIndex(q => q.doc === item.doc && q.key === item.key && q.kind === "cell" && q.header === item.header);
+    if (i >= 0) { item.name = queue[i].name; item.phone = queue[i].phone; queue.splice(i, 1); }
   }
-  return `<c r="${ref}"${style} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+  queue.push(item);
+  saveQueue();
+  updateSyncBar();
+  flushQueue();
 }
 
-function sheetXml(table, boldHeader) {
-  const body = table.map((row, r) =>
-    `<row r="${r + 1}">${row.map((v, c) => cellXml(v, colName(c) + (r + 1), boldHeader && r === 0)).join("")}</row>`).join("");
-  // column widths sized to content so dates don't show as ####
-  const widths = [];
-  table.forEach(row => row.forEach((v, c) => { widths[c] = Math.max(widths[c] || 11, Math.min(50, String(v ?? "").length + 2)); }));
-  const colsXml = widths.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>` : "";
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${colsXml}<sheetData>${body}</sheetData></worksheet>`;
-}
-
-// The original sheets with edits, plus "reminder sent" columns and the hidden settings sheet.
-function buildXlsx() {
-  const tables = sourceSheets.map(s => [[...s.headers, LOG_COLS.ippt, LOG_COLS.shoot]]);
-  sourceRows.forEach((src, idx) => {
-    const rec = recordsByRow.get(idx);
-    const sent = rec ? actions[rec.key] || {} : {};
-    tables[src.sheet].push([...src.cells, ...TABS.map(tab => sent[tab] ? fmtLogTime(sent[tab]) : "")]);
-  });
-  const meta = [["key", "value"], ["savedAt", new Date().toISOString()], ["app", "TRANSCOM Command Link"], ["source", fileName],
-                ["settings", JSON.stringify(settingsSnapshot())]];
-  const sheets = [...sourceSheets.map((s, i) => ({ name: s.name, xml: sheetXml(tables[i], true), hidden: false })),
-                  { name: META_SHEET, xml: sheetXml(meta, false), hidden: true }];
-
-  const NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
-  const R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
-  const PKG = "http://schemas.openxmlformats.org/package/2006/relationships";
-  const OFFICE = "application/vnd.openxmlformats-officedocument.spreadsheetml";
-  const HEAD = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`;
-  const each = fn => sheets.map(fn).join("");
-  return zipStore([
-    { name: "[Content_Types].xml", text: `${HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="${OFFICE}.sheet.main+xml"/>${each((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="${OFFICE}.worksheet+xml"/>`)}<Override PartName="/xl/styles.xml" ContentType="${OFFICE}.styles+xml"/></Types>` },
-    { name: "_rels/.rels", text: `${HEAD}<Relationships xmlns="${PKG}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
-    { name: "xl/workbook.xml", text: `${HEAD}<workbook xmlns="${NS}" xmlns:r="${R}"><sheets>${each((s, i) => `<sheet name="${xmlEsc(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ""} r:id="rId${i + 1}"/>`)}</sheets></workbook>` },
-    { name: "xl/_rels/workbook.xml.rels", text: `${HEAD}<Relationships xmlns="${PKG}">${each((_, i) => `<Relationship Id="rId${i + 1}" Type="${R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`)}<Relationship Id="rId${sheets.length + 1}" Type="${R}/styles" Target="styles.xml"/></Relationships>` },
-    // styles: 0 normal, 1 bold (header), 2 date
-    { name: "xl/styles.xml", text: `${HEAD}<styleSheet xmlns="${NS}"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>` },
-    ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, text: s.xml })),
-  ]);
-}
-
-function exportFileName() {
-  const base = (fileName && !demoMode ? fileName : "TRANSCOM_list")
-    .replace(/\.(xlsx|csv|tsv|txt)$/i, "").replace(/_updated_\d{4}-\d{2}-\d{2}(_\d{4})?$/, "");
-  return `${base}_updated_${fmtLogTime(Date.now()).replace(" ", "_").replace(":", "")}.xlsx`;   // ..._2026-11-12_1430.xlsx
-}
-
-async function writeToHandle(handle, blob) {
-  const w = await handle.createWritable();
-  await w.write(blob);
-  await w.close();
-}
-
-function triggerDownload(blob, name) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = name;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-}
-
-// Chrome/Edge desktop: Save As, then keep auto-saving to that file. Others: normal download.
-async function downloadExcel() {
-  if (!records.length) return;
-  const name = exportFileName(), snapshot = saveSnapshot(), blob = buildXlsx(), original = sourceFileName, madeByApp = !!fileMeta.savedAt;
+// Writes the loaded sheet's items one by one, oldest first (items for another sheet wait until that sheet is loaded).
+// Stops at the first failure: the item keeps its error for the sync bar; Retry, a refresh or a new sign-in tries again.
+async function flushQueue() {
+  if (flushing || !doc || needSignIn) return;
+  flushing = true;
+  updateSyncBar();
   try {
-    if (window.showSaveFilePicker && window.top === window) {
-      const handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: "Excel", accept: { [XLSX_MIME]: [".xlsx"] } }] });
-      if (handle.name.toLowerCase() === original.toLowerCase() && !madeByApp &&
-          !confirm(`This replaces your original file "${original}". Its colours, formulas and hidden sheets will be lost. Save over it anyway?`)) {
-        toast("Not saved");
-        return;
+    let item;
+    while (doc && (item = queue.find(q => q.doc === doc.id))) {
+      try {
+        await writeItem(item);
+        const i = queue.indexOf(item);           // may have been replaced by a newer edit meanwhile
+        if (i >= 0) queue.splice(i, 1);
+        saveQueue();
+      } catch (e) {
+        item.error = plainError(e);
+        if (e && e.status === 401) needSignIn = true;
+        break;
       }
-      await writeToHandle(handle, blob);
-      if (snapshot.load !== loadCount) { toast("Saved " + handle.name); return; }   // another file was loaded meanwhile: don't tie it to this file
-      saveHandle = handle;
-      fileName = handle.name || name;
-    } else {
-      triggerDownload(blob, name);
-      fileName = name;
     }
-  } catch (e) {
-    if (e && e.name === "AbortError") return;   // save dialog cancelled
-    toast("Could not save: " + (e.message || e));
+  } finally {
+    flushing = false;
+    saveQueue();
+    updateSyncBar();
+    if (selected && !$("fields").querySelector(".edit-in")) showResult(selected, true);   // SYNCING tags off; not while a box is open
+  }
+}
+
+// One write. The person is found by key, then the header row and their sheet row are read back (one call): the columns
+// must still be where they were and the row must still carry the same name + HP (columns may have been inserted, rows
+// sorted or deleted since the load); otherwise the tab is re-read and tried once more.
+// Not found at all -> the item is dropped with a toast and nothing is written.
+async function writeItem(item) {
+  // "Load different sheet" can happen during a write: after each wait, this must still be that sheet
+  const same = () => { if (!doc || doc.id !== item.doc) throw new Error("Another sheet was loaded before this was written. Load that sheet again to finish."); };
+  const findRec = () => records.find(r => r.key === item.key) || records.find(r => r.key === personKey(item.name, item.phone));
+  // { hdr, cells, row } as now in the sheet, or null if the columns moved or that row is no longer this person. The checked
+  // row number is kept: a refresh during the read replaces doc, so doc.rowOf may no longer match this rec.
+  const rowCells = async rec => {
+    const row = doc.rowOf[rec.idx];
+    const [[hdr = []], [cells = []]] = await gsheets.readMany(doc.id, [tabRange(rowRange(doc.headerRow)), tabRange(rowRange(row))]);
+    same();
+    if (!doc.header.every((h, i) => String(hdr[i] ?? "").trim() === h)) return null;
+    const at = col => col >= 0 ? String(cells[gridColOf(col)] ?? "") : "";
+    return norm(at(cols.name)) === norm(item.name) && normPhone(at(cols.phone)) === normPhone(item.phone) ? { hdr, cells, row } : null;
+  };
+  let rec = findRec(), found = rec && await rowCells(rec);
+  if (!found) {
+    // not re-read (a ticket field is open, another refresh is running, or an error): keep the item for a later retry
+    if (!(await refreshSheet())) throw needSignIn ? { status: 401 } : new Error("Could not re-read the sheet to find this person. Tap Retry.");
+    same();
+    rec = findRec(); found = rec && await rowCells(rec);
+    if (!found) { toast(`${item.name}: not found in the sheet, nothing written`); return; }
+  }
+  const { hdr, cells, row } = found;
+  if (item.kind === "cell") {
+    const col = headers.indexOf(item.header);
+    if (col < 0 || !isEditable(rec, col)) { toast(`${item.name}: no "${item.header}" column in the sheet, nothing written`); return; }
+    await gsheets.write(doc.id, tabRange(cellA1(gridColOf(col), row)), [[item.value]], item.raw);
     return;
   }
-  markSaved(snapshot);
-  toast("Saved " + fileName);
-  if (unsavedCount()) scheduleAutoSave();   // changes made while the Save As dialog was open
+  const at = await ensureLogCol(item.tab, hdr);
+  const stamped = String(cells[at] ?? "").trim();
+  if (stamped) {   // someone else stamped this person first: theirs stays and is shown here
+    (actions[rec.key] ||= {})[item.tab] = parseLogTime(stamped) || sentAt(rec, item.tab);
+    saveActions();
+    dataChanged(item.tab === view.tab ? { sentTo: rec } : {});
+    return;
+  }
+  same();
+  await gsheets.write(doc.id, tabRange(cellA1(at, row)), [[item.value]], true);
 }
 
-// The state a save writes. Taken together with buildXlsx(), so changes made while the file is
-// being written are not wrongly counted as saved. `load` ties it to the file that was loaded then.
-const saveSnapshot = () => ({ actions: JSON.parse(JSON.stringify(actions)), rows: rows.map(r => r.slice()), settingsVersion, load: loadCount });
-
-function markSaved(snapshot) {
-  if (snapshot.load !== loadCount) return;   // a different file is loaded now
-  fileActions = snapshot.actions;
-  savedRows = snapshot.rows;
-  savedSettingsVersion = snapshot.settingsVersion;
-  updateSaveBar();
-  if (selected) showResult(selected, true);   // clear EDITED tags on an open ticket
+// Sheet column of the "reminder sent" column for tab. hdr = the header row as just read: a column another CO added since
+// the load is used as it is (a header is never overwritten); else the header is written after the last one.
+async function ensureLogCol(tab, hdr) {
+  const d = doc, names = hdr.map(h => String(h ?? "").trim().toLowerCase());
+  for (const t of TABS) {
+    const i = d.logAt[t] === undefined ? names.indexOf(LOG_COLS[t].toLowerCase()) : -1;
+    if (i >= 0) { d.logAt[t] = i; d.header[i] = LOG_COLS[t]; }
+  }
+  if (d.logAt[tab] !== undefined) return d.logAt[tab];
+  let at = names.length;
+  while (at && !names[at - 1]) at--;
+  if (at >= d.columnCount) { await gsheets.addColumns(d.id, d.sheetId, at - d.columnCount + 1); d.columnCount = at + 1; }
+  await gsheets.write(d.id, tabRange(cellA1(at, d.headerRow), d.tab), [[LOG_COLS[tab]]], true);
+  d.logAt[tab] = at; d.header[at] = LOG_COLS[tab];
+  return at;
 }
 
-function scheduleAutoSave() {
-  if (!saveHandle) return;
-  clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(async () => {
-    try {
-      const snapshot = saveSnapshot();
-      await writeToHandle(saveHandle, buildXlsx());
-      markSaved(snapshot);
-    } catch {
-      toast("Auto-save failed. Close the file in Excel, then press Download.");
-    }
-  }, 1200);
+// Bottom bar (blue while writing, red when stuck) + the line in Your Data. Hidden when nothing is waiting.
+function updateSyncBar() {
+  const n = queue.length, mine = doc ? queue.filter(q => q.doc === doc.id) : [];
+  const stuck = n > 0 && !flushing;
+  document.body.classList.toggle("has-unsaved", n > 0);
+  $("syncBar").hidden = n === 0 && !flushing;
+  $("syncBar").classList.toggle("stuck", stuck);
+  const why = !mine.length ? "load that sheet to finish" : (mine.find(q => q.error) || {}).error || "";   // waiting items all belong to another sheet
+  $("syncText").innerHTML = flushing
+    ? `<span class="blink">&#9632;</span> Syncing&hellip;`
+    : `<span class="blink">&#9632;</span> ${n} not synced${why ? ` &middot; ${esc(why)}` : ""}`;
+  $("syncRetry").hidden = !stuck || !mine.length;
+  $("syncRetry").textContent = needSignIn ? "Sign in again" : "Retry";
+  $("syncState").innerHTML = demoMode ? `<span class="warn">Sample data: nothing is written anywhere</span>`
+    : !doc ? "" : mine.length ? `<span class="warn">${mine.length} not synced</span>` : `<span class="ok">All synced</span>`;
 }
 
 /* =====================================================================
-   14. MESSAGE SETTINGS
+   13. MESSAGE SETTINGS
    ===================================================================== */
 // Only wording the CO changed is stored, so better default wording still reaches everyone else.
 const changedTemplates = () => Object.fromEntries(TABS.map(tab =>
@@ -1748,21 +1627,14 @@ function applySettings(s) {
 }
 const saveSettings = () => store.save(STORE.settings, { ...settingsSnapshot(), openIn: settings.openIn });
 
-// On load: settings saved inside the file win over this device's, but the FY labels always
-// follow the sheet's own FY columns (a newer FY column must not keep an old label).
-function applyFileSettings() {
-  if (fileMeta.settings) {
-    try { applySettings(JSON.parse(fileMeta.settings)); saveSettings(); } catch {}
-  }
-  if (cols.thisFyNum !== null) {
-    settings.thisFy = "FY" + pad(cols.thisFyNum);
-    settings.lastFy = "FY" + pad((cols.thisFyNum + 99) % 100);
-  }
-  savedSettingsVersion = settingsVersion;
+// On load, the FY labels follow the sheet's own FY columns (a newer FY column must not keep an old label).
+function applyFyFromHeaders() {
+  if (cols.thisFyNum === null) return;
+  settings.thisFy = "FY" + pad(cols.thisFyNum);
+  settings.lastFy = "FY" + pad((cols.thisFyNum + 99) % 100);
 }
 
 function settingsChanged() {
-  settingsVersion++;
   saveSettings();
   dataChanged({ soon: true });
 }
@@ -1802,15 +1674,14 @@ const canSend = (rec, tab) => !!templateFor(rec, tab) && hasValidHp(rec);
 const chatLink = (rec, tab) => waLink(rec, fillTemplate(templateFor(rec, tab), rec));
 
 /* =====================================================================
-   15. VIEW REFRESH
+   14. VIEW REFRESH
    ===================================================================== */
 // Called after anything changes the data, reminders or settings.
 // soon = while typing: the redraw waits until typing pauses (send links read the latest wording when clicked).
 // sentTo = only this person's reminder log changed (see renderSentRow).
 let renderTimer = 0;
 function dataChanged({ soon = false, sentTo = null } = {}) {
-  updateSaveBar();
-  scheduleAutoSave();
+  updateSyncBar();
   if (sentTo && !$("tabRemind").hidden && hasTabData(view.tab)) renderSentRow(sentTo);
   else if (soon) { clearTimeout(renderTimer); renderTimer = setTimeout(renderVisibleTab, 200); }
   else renderVisibleTab();
@@ -1824,27 +1695,54 @@ function renderVisibleTab() {
 }
 const renderFind = () => { renderStats(); renderRoster(); };
 
-// Fresh state for a newly loaded file.
+// Fresh state for a newly loaded sheet.
 function resetViews() {
   Object.assign(view, { filter: "ALL", group: "ALL", rosterFilter: "ALL" });
   batch.queue = [];
-  for (const k in lineSeen) delete lineSeen[k];   // new file: seed the "line cleared" state without firing
+  for (const k in lineSeen) delete lineSeen[k];   // new sheet: seed the "line cleared" state without firing
   undoStack.length = 0;
   fillRemindSelects();
   $("rmTemplates").dataset.tab = "";
   hideResult();
   ["qName", "qPhone"].forEach(id => $(id).value = "");
   closeSuggestions();
-  updateSaveBar();
+  updateSyncBar();
+  renderVisibleTab();
+}
+
+// After a refresh of the same sheet. The records are new objects, so the open ticket, undo steps and a running batch
+// follow their people by key; anyone no longer in the sheet drops out. Tab, filters, group (if it still exists),
+// search text and scroll stay; lineSeen stays, so a line someone else just cleared still gets its confetti.
+function keepViews() {
+  const byKey = new Map(records.map(r => [r.key, r]));
+  const now = rec => byKey.get(rec.key);
+  for (let i = undoStack.length - 1; i >= 0; i--) {
+    const rec = now(undoStack[i].rec);
+    if (rec) undoStack[i].rec = rec; else undoStack.splice(i, 1);
+  }
+  if (batch.queue.length) {   // done/skipped people before pos keep their count, so the panel still reads "n / N"
+    const pos = batch.queue.slice(0, batch.pos).filter(now).length;
+    batch.queue = batch.queue.map(now).filter(Boolean);
+    batch.pos = pos;
+    while (batch.pos < batch.queue.length && !stillToSend(batch.queue[batch.pos])) batch.pos++;   // stamped by someone else
+    if (batch.pos >= batch.queue.length) endBatch();
+  }
+  fillRemindSelects();   // group counts change
+  if (![...$("rmGroup").options].some(o => o.value === view.group)) { view.group = "ALL"; batch.queue = []; }
+  $("rmGroup").value = view.group;
+  closeSuggestions();    // they point at the old rows
+  const rec = selected && now(selected);
+  if (rec) showResult(rec, true); else hideResult();
+  updateSyncBar();
   renderVisibleTab();
 }
 
 /* =====================================================================
-   15b. EFFECTS (transform / opacity only, pixel steps; none when the device asks for reduced motion)
+   14b. EFFECTS (transform / opacity only, pixel steps; none when the device asks for reduced motion)
    ===================================================================== */
 const motionOK = () => !matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Train arrival after a file loads: drives the CSS under body.arrive. Stops centred, holds, then departs (.depart, 0.8 s);
+// Train arrival after a sheet loads: drives the CSS under body.arrive. Stops centred, holds, then departs (.depart, 0.8 s);
 // the normal loop resumes after that. Timers, not animationend: they also finish when animations are paused. Never blocks input.
 let arriveTimer = 0;
 function arrive() {
@@ -1853,8 +1751,8 @@ function arrive() {
   body.classList.remove("arrive", "depart");
   sound.arrive();
   if (!motionOK()) return;
-  $("arriveSign").textContent = `Now arriving · ${demoMode ? "sample data" : fileName} · ${records.length.toLocaleString()} pax`;
-  void body.offsetWidth;                       // restart the animations if a file loads during an arrival
+  $("arriveSign").textContent = `Now arriving · ${demoMode ? "sample data" : sourceTitle} · ${records.length.toLocaleString()} pax`;
+  void body.offsetWidth;                       // restart the animations if a sheet loads during an arrival
   body.classList.add("arrive");
   arriveTimer = setTimeout(() => {
     body.classList.add("depart");
@@ -1869,7 +1767,7 @@ const saveLook = () => store.save(STORE.look, { sound: look.sound, crt: look.crt
 
 // Chiptune blips: square-wave beeps, no audio files. The AudioContext is made only when a sound plays with the
 // switch on, normally inside a click (switch, Send), so nothing autoplays. If the browser has had no click yet the sound
-// stays silent (e.g. the arrival chime after a drag-drop). Any failure is silent.
+// stays silent. Any failure is silent.
 let audioCtx = null;
 function beep(notes) {   // notes: [[Hz, start s, length s], ...]
   if (!look.sound) return;
@@ -1893,15 +1791,15 @@ const sound = {
   arrive: () => beep([[880, 0, 0.18], [659, 0.2, 0.3]]),   // generic two-tone, not the real SMRT chime
 };
 
-// While a file is being read: "Doors closing" on the start popup, load buttons off.
+// While a sheet is being read: "Doors closing" on the start popup, load buttons off.
 function setBoarding(on) {
   document.body.classList.toggle("boarding", on);
-  $("gatePick").disabled = $("pick").disabled = on;
+  $("gateLoad").disabled = $("pick").disabled = on;
 }
 
 /* ---------- gate + tabs ---------- */
 function closeGate() { $("gate").hidden = true; document.body.classList.remove("gated"); arrive(); }
-function openGate() { $("gate").hidden = false; document.body.classList.add("gated"); $("gateErr").textContent = ""; }
+function openGate() { $("gate").hidden = false; document.body.classList.add("gated"); $("gateErr").textContent = ""; renderRecent(); }
 
 function showTab(which) {
   const remind = which === "remind";
@@ -1917,7 +1815,7 @@ function showTab(which) {
 }
 
 /* =====================================================================
-   16. FIND OFFICER TAB: search dropdowns
+   15. FIND OFFICER TAB: search dropdowns
    ===================================================================== */
 function highlight(text, q) {
   const i = q ? text.toLowerCase().indexOf(q.toLowerCase()) : -1;
@@ -1988,7 +1886,7 @@ document.querySelectorAll("[data-clear]").forEach(btn => btn.addEventListener("c
 }));
 
 /* =====================================================================
-   17. FIND OFFICER TAB: result ticket + editing
+   16. FIND OFFICER TAB: result ticket + editing
    ===================================================================== */
 function fieldHtml(rec, col) {
   const value = rec.raw[col] || "", cell = cellOf(rec, col);
@@ -2001,10 +1899,10 @@ function fieldHtml(rec, col) {
   else if (col === cols.thisFy && resultText(cell) !== cell) shown = `${value} (${resultText(cell)})`;   // "FL" -> "FL (Fail)"
   else if (isNsfit) shown = `${cell || 0} / ${NSFIT_SESSIONS} sessions`;
   const editable = isEditable(rec, col);
-  const edited = value !== (savedRows[rec.idx][col] || "");
+  const pending = queuedCell(rec, col);   // an edit not in the sheet yet
   const kind = col === cols.name ? " primary" : col === cols.phone ? " phone" : status ? " result" : "";
-  return `<div class="field${kind}${editable ? " editable" : ""}${edited ? " edited" : ""}" data-col="${col}"${status ? ` style="--c:${STATUS_COLOR[status]}"` : ""}>
-    <div class="k">${esc(headers[col])}${status ? `<span class="st">${esc(status)}</span>` : ""}${edited ? '<span class="ed-tag">EDITED</span>' : ""}${editable ? '<span class="pen">&#9998;</span>' : ""}</div>
+  return `<div class="field${kind}${editable ? " editable" : ""}${pending ? " edited" : ""}" data-col="${col}"${status ? ` style="--c:${STATUS_COLOR[status]}"` : ""}>
+    <div class="k">${esc(headers[col])}${status ? `<span class="st">${esc(status)}</span>` : ""}${pending ? `<span class="ed-tag">${pending.error ? "NOT SYNCED" : "SYNCING"}</span>` : ""}${editable ? '<span class="pen">&#9998;</span>' : ""}</div>
     <div class="v${shown ? "" : " empty"}">${shown ? esc(shown) : "-"}</div></div>`;
 }
 
@@ -2031,34 +1929,92 @@ function showResult(rec, quiet = false) {
 }
 function hideResult() { $("result").classList.remove("show"); selected = null; }
 
-// Click a field to edit it: Enter or clicking away saves, Esc cancels.
+// Edit control per column: dropdowns for fixed values, a date box, a number box, else a text box.
+// Returns { el, value(), raw, kind, bad?() }. raw = false: Sheets reads the value as typed (an ISO date becomes a real date).
+const OWN = "__own";   // "Type your own…" in a dropdown
+const LIST_FIELDS = ["pes", "rank", "unit", "organizational unit", "actual org unit"];   // plus VFIT/MFIT (cols.track)
+const isDateCol = col => /ippt\s*date/i.test(headers[col] || "");
+// "18/5/2026" or "2026-05-18" -> "2026-05-18"; anything else -> ""
+function isoDate(s) {
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s.trim());
+  if (m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s.trim());
+  return m ? `${m[3]}-${pad(+m[2])}-${pad(+m[1])}` : "";
+}
+
+function textEditor(value, col) {
+  const el = Object.assign(document.createElement("textarea"), { className: "edit-in", value });
+  el.rows = Math.min(6, Math.max(1, Math.ceil(value.length / 28)));
+  if (col === cols.phone) el.inputMode = "tel";
+  return { el, value: () => el.value, raw: true, kind: "text" };
+}
+
+function editorFor(rec, col) {
+  const now = (rec.raw[col] || "").trim();
+  if (col === cols.thisFy || col === cols.track || LIST_FIELDS.includes(String(headers[col]).trim().toLowerCase())) {
+    const opts = col === cols.thisFy ? Object.entries(RESULT_WORDS)   // shown as words, written as codes (FL, AB...)
+      : [...new Set(records.map(r => cellOf(r, col)).filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).map(v => [v, v]);
+    const cur = opts.find(([v]) => v.toLowerCase() === now.toLowerCase());
+    if (now && !cur) opts.unshift([now, now]);   // a value not in the list (e.g. #N/A) is shown as it is
+    const el = Object.assign(document.createElement("select"), { className: "edit-in" });
+    el.innerHTML = [["", ""], ...opts, [OWN, "Type your own…"]].map(([v, label]) => `<option value="${esc(v)}">${esc(label)}</option>`).join("");
+    el.value = cur ? cur[0] : now;
+    return { el, value: () => el.value, raw: true, kind: "select" };
+  }
+  if (isDateCol(col)) {
+    const el = Object.assign(document.createElement("input"), { type: "date", className: "edit-in" });
+    el.value = isoDate(now);
+    return { el, value: () => el.value, raw: false, kind: "date" };
+  }
+  if (col === cols.nsfit) {
+    const el = Object.assign(document.createElement("input"), { type: "number", min: 0, step: 1, inputMode: "numeric", className: "edit-in" });
+    el.value = /^\d+$/.test(now) ? now : "";
+    return { el, value: () => el.value, raw: false, kind: "number", bad: () => !el.validity.valid };   // a real number in the sheet, not text
+  }
+  return textEditor(rec.raw[col] || "", col);
+}
+
+// Click a field to edit it: Enter or clicking away saves, Esc cancels. A dropdown also saves when a value is picked
+// (date and number boxes only on Enter / clicking away: their change event fires mid-typing).
+// Nothing is written if the value was not changed (an untouched #N/A stays).
 function startEditing(fieldEl) {
   const rec = selected, col = +fieldEl.dataset.col;
-  const input = document.createElement("textarea");
-  input.className = "edit-in";
-  input.value = rec.raw[col] || "";
-  input.rows = Math.min(6, Math.max(1, Math.ceil(input.value.length / 28)));
-  if (col === cols.phone) input.inputMode = "tel";
-  fieldEl.querySelector(".v").replaceWith(input);
-  input.focus(); input.select();
+  let ed = editorFor(rec, col), finished = false;
+  const initial = ed.value();
 
-  let finished = false;
   const finish = save => {
     if (finished) return;
     finished = true;
-    if (save && setCell(rec, col, input.value)) toast(`${headers[col]} updated`);
+    if (save && ed.bad?.()) { toast(`${headers[col]}: whole numbers only. Not saved.`); save = false; }
+    const value = ed.value();
+    if (save && value !== initial && setCell(rec, col, value, { raw: ed.raw }))
+      toast(col === cols.phone && value.trim() && normPhone(value).length !== HP_LENGTH ? "Check: HP is not 8 digits" : `${headers[col]} updated`);
     showResult(rec, true);
   };
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); finish(true); }
-    else if (e.key === "Escape") finish(false);
-  });
-  input.addEventListener("blur", () => finish(true));
+  const wire = el => {
+    el.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !(e.shiftKey && el.tagName === "TEXTAREA")) { e.preventDefault(); finish(true); }
+      else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+    });
+    el.addEventListener("blur", () => { if (el === ed.el) finish(true); });   // a swapped-out dropdown is ignored
+    if (ed.kind === "select") el.addEventListener("change", () => {
+      if (el.value !== OWN) { finish(true); return; }
+      ed = textEditor(rec.raw[col] || "", col);   // "Type your own…": a text box with the cell as it is
+      el.replaceWith(ed.el);
+      wire(ed.el);
+      ed.el.focus(); ed.el.select();
+    });
+  };
+  fieldEl.querySelector(".v").replaceWith(ed.el);
+  wire(ed.el);
+  ed.el.focus();
+  ed.el.select?.();
 }
 
 $("fields").addEventListener("click", e => {
   const fieldEl = e.target.closest(".field.editable");
-  if (!fieldEl || !selected || fieldEl.querySelector("textarea")) return;
+  if (!fieldEl || !selected || fieldEl.querySelector(".edit-in")) return;
   startEditing(fieldEl);
 });
 $("copyPhone").addEventListener("click", async () => {
@@ -2072,7 +2028,7 @@ $("openWa").addEventListener("click", () => {
 });
 
 /* =====================================================================
-   18. FIND OFFICER TAB: stat boxes + full list
+   17. FIND OFFICER TAB: stat boxes + full list
    ===================================================================== */
 // "Line cleared": 48 pixel squares in the six MRT line colours burst from anchorEl for 1.2 s, then are removed.
 // Reduced motion: only the toast. Callers decide when to fire (crossings only, see lineCrossed).
@@ -2097,7 +2053,7 @@ function lineCleared(anchorEl, label) {
 }
 
 // Remembers whether each target was already complete; true only when it just became complete.
-// A target seen for the first time (file load, new filter) is recorded without firing; resetViews clears it.
+// A target seen for the first time (sheet load, new filter) is recorded without firing; resetViews clears it.
 const lineSeen = {};
 function lineCrossed(key, complete) {
   const was = lineSeen[key];
@@ -2180,13 +2136,13 @@ $("roster").addEventListener("click", e => {
 });
 
 /* =====================================================================
-   19. SEND REMINDER TAB
+   18. SEND REMINDER TAB
    ===================================================================== */
 function fillRemindSelects() {
   const counts = new Map();
   if (cols.group >= 0) for (const r of records) { const g = cellOf(r, cols.group); if (g) counts.set(g, (counts.get(g) || 0) + 1); }
   const groups = [...counts.keys()];
-  if (headers[cols.group] !== "Sheet") groups.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));   // sheets keep file order
+  if (headers[cols.group] !== "Sheet") groups.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));   // sheets keep their order
   $("rmGroup").innerHTML = `<option value="ALL">All (${records.length})</option>` +
     groups.map(g => `<option value="${esc(g)}">${esc(g)} (${counts.get(g)})</option>`).join("");
   $("rmGroupWrap").hidden = !groups.length;
@@ -2241,10 +2197,21 @@ function remindRowHtml({ rec, status }, tab) {
   </div>`;
 }
 
+// Send is blocked until Your name, FY and deadline are filled (Send links greyed, Start batch off, a note that jumps there).
+const sendReady = () => !!(settings.me.trim() && settings.thisFy.trim() && settings.deadline.trim());
+function focusNeed() {
+  if (view.tab !== "ippt") $("subIppt").click();   // FY and deadline are shown on the IPPT sub-tab only
+  const id = ["rmMe", "rmThisFy", "rmDeadline"].find(id => !$(id).value.trim());
+  $("rmMe").closest(".rm-settings").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "nearest" });
+  if (id) $(id).focus({ preventScroll: true });
+}
+
 function renderRemind() {
   const tab = view.tab;
   syncRemindControls();
   renderBatch();
+  $("rmList").classList.toggle("send-off", !sendReady());
+  $("rmNeed").hidden = sendReady();
   if (!hasTabData(tab)) {
     $("rmChips").innerHTML = ""; $("rmProgress").textContent = "";
     $("rmList").innerHTML = `<div class="empty">No ${tab === "ippt" ? "IPPT Rs or VFIT/MFIT" : "shooting"} column found in the sheet.</div>`;
@@ -2333,6 +2300,7 @@ $("rmList").addEventListener("click", e => {
   if (!rec) return;
   const link = e.target.closest("a.send");
   if (link) {
+    if (!sendReady()) { e.preventDefault(); focusNeed(); return; }   // e.g. a keyboard Enter on a greyed link
     link.href = chatLink(rec, view.tab);   // latest wording, even before the list redraws
     if (batchActive() && batch.queue[batch.pos] === rec) advanceBatch();    // sent from the list: don't offer them again
     chatOpened(rec, view.tab);
@@ -2352,18 +2320,18 @@ const cooldownLeftMs = () => batch.endedAt ? COOLDOWN_MS - (Date.now() - batch.e
 const batchActive = () => batch.queue.length > 0 && batch.tab === view.tab;
 
 function startBatch() {
+  if (!sendReady()) { focusNeed(); return; }
   const tab = view.tab;
   const size = Math.max(1, Math.min(BATCH_MAX, parseInt($("bSize").value, 10) || BATCH_MAX));
   $("bSize").value = size;
   if (cooldownLeftMs() > 0) {
     if (!confirm(`Your last batch ended ${fmtWhen(batch.endedAt)}. Wait 1-2 days between batches so WhatsApp doesn't flag your number. Start anyway?`)) return;
   }
-  if (!settings.me.trim() && !confirm("Blank: Your name. Messages will go out without it. Start anyway?")) return;
-  const queue = remindItems(tab)
+  const people = remindItems(tab)
     .filter(i => (view.filter === "ALL" || i.status === view.filter) && stillToSend(i.rec, tab))
     .slice(0, size).map(i => i.rec);
-  if (!queue.length) { toast("Nobody left to send in this view"); return; }
-  Object.assign(batch, { queue, pos: 0, tab });
+  if (!people.length) { toast("Nobody left to send in this view"); return; }
+  Object.assign(batch, { queue: people, pos: 0, tab });
   renderBatch();
   $("batchPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -2387,7 +2355,8 @@ function endBatch() {
 
 function renderBatch() {
   const panel = $("batchPanel");
-  $("bStart").disabled = batchActive();
+  $("bStart").disabled = batchActive() || !sendReady();
+  panel.classList.toggle("send-off", !sendReady());   // a running batch pauses while a detail is blank
   if (!batchActive()) {
     const left = cooldownLeftMs();
     panel.hidden = left <= 0;
@@ -2409,9 +2378,11 @@ function renderBatch() {
 }
 
 $("bStart").addEventListener("click", startBatch);
+$("rmNeed").addEventListener("click", focusNeed);
 $("batchPanel").addEventListener("click", e => {
   const next = e.target.closest("#bNext");
   if (next) {
+    if (!sendReady()) { e.preventDefault(); focusNeed(); return; }
     const rec = batch.queue[batch.pos], tab = batch.tab;
     next.href = chatLink(rec, tab);      // latest wording
     advanceBatch();
@@ -2421,48 +2392,50 @@ $("batchPanel").addEventListener("click", e => {
 });
 
 /* =====================================================================
-   20. WIRING: file loading, saving, tabs, leave warning
+   19. WIRING: sheet loading, sync, tabs, leave warning
    ===================================================================== */
-$("pick").addEventListener("click", () => $("file").click());
-$("gatePick").addEventListener("click", () => $("file").click());
-$("gateDemo").addEventListener("click", () => openSheets(DEMO_SHEETS, "sample data", {}, true));
-$("file").addEventListener("change", e => {
-  if (e.target.files[0]) handleFile(e.target.files[0]);
-  e.target.value = "";
-});
-["dragenter", "dragover"].forEach(ev => window.addEventListener(ev, e => { e.preventDefault(); document.body.classList.add("dragging"); }));
-["dragleave", "drop"].forEach(ev => window.addEventListener(ev, e => { e.preventDefault(); document.body.classList.remove("dragging"); }));
-window.addEventListener("drop", e => {
-  const f = e.dataTransfer.files[0];
-  if (!f) return;
-  handleFile(f);
+$("pick").addEventListener("click", openGate);
+$("refresh").addEventListener("click", () => refreshSheet().then(ok => ok && toast(`Refreshed: ${records.length} records`)));
+document.addEventListener("visibilitychange", () => document.hidden ? wentAway() : maybeRefresh());
+window.addEventListener("blur", wentAway);
+window.addEventListener("focus", maybeRefresh);
+$("gateDemo").addEventListener("click", () => openSheets(DEMO_SHEETS, "sample data", true));
+$("gateLoad").addEventListener("click", () => loadFromGoogle($("gateLink").value));
+$("gateLink").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("gateLoad").click(); } });
+$("gateRecent").addEventListener("click", e => {
+  const b = e.target.closest("button[data-id]");
+  if (b && !$("gateLoad").disabled) loadFromGoogle(b.dataset.id);
 });
 
 // Ctrl+Z (Cmd+Z on Mac) undoes the last field edit; while typing in a box the browser undoes the typing instead.
 document.addEventListener("keydown", e => {
   if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== "z") return;
-  if (e.target.closest("input, textarea, select") || $("tabFind").hidden || !$("gate").hidden || !$("conflict").hidden) return;
+  if (e.target.closest("input, textarea, select") || $("tabFind").hidden || !$("gate").hidden) return;
   e.preventDefault();
   undoLastEdit();
 });
 
-$("saveBtn").addEventListener("click", downloadExcel);
-$("dlBtn").addEventListener("click", downloadExcel);
+// Retry stuck writes; after a 401 this first asks Google to sign in again (needs a click, so never automatic).
+$("syncRetry").addEventListener("click", () => {
+  if (!needSignIn) { flushQueue(); return; }
+  gsheets.signIn().then(() => { needSignIn = false; refreshSheet().then(ok => ok || flushQueue()); }, e => toast(plainError(e)));
+});
 $("tabBtnFind").addEventListener("click", () => showTab("find"));
 $("tabBtnRemind").addEventListener("click", () => showTab("remind"));
 window.addEventListener("beforeunload", e => {
-  if (unsavedCount()) { e.preventDefault(); e.returnValue = ""; }
+  if (queue.length) { e.preventDefault(); e.returnValue = ""; }
 });
 
 /* =====================================================================
-   21. BOOT
+   20. BOOT
    ===================================================================== */
 applySettings(store.load(STORE.settings, null));
 $("lookSound").checked = look.sound;
 $("lookCrt").checked = look.crt;
 document.body.classList.toggle("crt", look.crt);
+try { localStorage.removeItem("spf.edits.v1"); } catch {}   // the old Excel flow's edits store, no longer used (other spf. keys keep their names)
 openGate();
-updateSaveBar();
+updateSyncBar();
 })();
 </script>
 </body>
