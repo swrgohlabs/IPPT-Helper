@@ -319,6 +319,15 @@
   .howto-note { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
   #gateErr { margin-top: 12px; }
   .gsheet { margin-top: 16px; display: grid; gap: 10px; }
+  /* link box + its Load button joined into one block, kept apart from Browse */
+  .linkbox { display: grid; border: var(--px) solid #000; box-shadow: 4px 4px 0 #000; }
+  .linkbox .input-row { border: 0; box-shadow: none; }
+  .linkbox .btn { width: 100%; border: 0; border-top: var(--px) solid #000; box-shadow: none; }
+  .linkbox .btn:active { transform: none; }
+  .gsheet .or { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .gsheet .or::before, .gsheet .or::after { content: ""; flex: 1; border-top: 2px dashed currentColor; }
+  #gateBrowse { background: #fff; }
+  #gateBrowse:hover { background: var(--hover); }
   #gateRecent { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
   #gateRecent:empty { display: none; }
   #gateRecent .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: none; }
@@ -550,9 +559,12 @@
       <div class="roundel">TRANSCOM</div>
       <h2>Tap in to start</h2>
       <div class="gsheet">
-        <div class="input-row"><input id="gateLink" type="text" placeholder="Paste the Google Sheets link" autocomplete="off"></div>
-        <button class="btn big" id="gateLoad">Load from Google Sheets</button>
-        <button class="btn" id="gateBrowse">Or browse my Google Drive</button>
+        <div class="linkbox">
+          <div class="input-row"><input id="gateLink" type="text" placeholder="Paste the Google Sheets link" autocomplete="off"></div>
+          <button class="btn big" id="gateLoad">Load from link</button>
+        </div>
+        <div class="or">or</div>
+        <button class="btn" id="gateBrowse">Browse my Google Drive</button>
         <div id="gateRecent"></div>
       </div>
       <div class="dz-busy"><span class="blink">Doors closing...</span></div>
